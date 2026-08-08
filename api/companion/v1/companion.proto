@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package companion.v1;
+
+option go_package = "companion-service/api/companion/v1;v1";
+
+import "google/api/annotations.proto";
+
+service Companion {
+  rpc CreateConversation(CreateConversationRequest) returns (ConversationReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/conversations"
+      body: "*"
+    };
+  }
+
+  rpc GetConversation(GetConversationRequest) returns (ConversationReply) {
+    option (google.api.http) = {
+      get: "/companion/v1/conversations/{conversation_id}"
+    };
+  }
+
+  rpc SendMessage(SendMessageRequest) returns (SendMessageReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/conversations/{conversation_id}/messages"
+      body: "*"
+    };
+  }
+}
+
+message Conversation {
+  string conversation_id = 1;
+  string user_id = 2;
+  string companion_id = 3;
+  string status = 4;
+  string summary = 5;
+  repeated ConversationMessage messages = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message ConversationMessage {
+  string message_id = 1;
+  string role = 2;
+  string content = 3;
+  string created_at = 4;
+}
+
+message CreateConversationRequest {
+  string companion_id = 1;
+}
+
+message GetConversationRequest {
+  string conversation_id = 1;
+}
+
+message SendMessageRequest {
+  string conversation_id = 1;
+  string content = 2;
+}
+
+message ConversationReply {
+  Conversation conversation = 1;
+}
+
+message SendMessageReply {
+  ConversationMessage user_message = 1;
+  ConversationMessage assistant_message = 2;
+}

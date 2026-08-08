@@ -1,0 +1,22 @@
+server:
+  http:
+    network: tcp
+    addr: 0.0.0.0:8140
+    timeout: 120s
+  grpc:
+    network: tcp
+    addr: 0.0.0.0:9140
+    timeout: 120s
+data:
+  database:
+    source_env: COMPANION_DATABASE_DSN
+    max_idle_conns: 10
+    max_open_conns: 50
+model_gateway:
+  grpc_addr: model-gateway:9130
+  timeout: 120s
+  api_key_env: MODEL_GATEWAY_INBOUND_API_KEY
+log:
+  level: info
+  format: json
+  output: stdout

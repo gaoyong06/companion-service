@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package conf;
+
+option go_package = "companion-service/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  Server server = 1;
+  Data data = 2;
+  ModelGateway model_gateway = 3;
+  Log log = 4;
+}
+
+message Server {
+  HTTP http = 1;
+  GRPC grpc = 2;
+}
+
+message HTTP {
+  string network = 1;
+  string addr = 2;
+  google.protobuf.Duration timeout = 3;
+}
+
+message GRPC {
+  string network = 1;
+  string addr = 2;
+  google.protobuf.Duration timeout = 3;
+}
+
+message Data {
+  Database database = 1;
+}
+
+message Database {
+  string source = 1;
+  string source_env = 2;
+  int32 max_idle_conns = 3;
+  int32 max_open_conns = 4;
+}
+
+message ModelGateway {
+  string grpc_addr = 1;
+  google.protobuf.Duration timeout = 2;
+  string api_key_env = 3;
+}
+
+message Log {
+  string level = 1;
+  string format = 2;
+  string output = 3;
+  string file_path = 4;
+  int32 max_size = 5;
+  int32 max_age = 6;
+  int32 max_backups = 7;
+  bool compress = 8;
+}
