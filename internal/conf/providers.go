@@ -30,4 +30,11 @@ func NewModelGatewayConfig(b *Bootstrap) *ModelGateway {
 	return b.ModelGateway
 }
 
-var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig)
+func NewMemoryConfig(b *Bootstrap) *Memory {
+	if b == nil {
+		return nil
+	}
+	return b.Memory
+}
+
+var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig, NewMemoryConfig)

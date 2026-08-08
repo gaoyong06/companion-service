@@ -8,6 +8,7 @@ import (
 	"companion-service/internal/client"
 	"companion-service/internal/conf"
 	"companion-service/internal/data"
+	"companion-service/internal/memory"
 	"companion-service/internal/server"
 	"companion-service/internal/service"
 
@@ -17,6 +18,6 @@ import (
 )
 
 func wireApp(*conf.Bootstrap, log.Logger) (*kratos.App, func(), error) {
-	wire.Build(conf.ProviderSet, data.ProviderSet, client.ProviderSet, biz.ProviderSet, service.ProviderSet, server.ProviderSet, newApp)
+	wire.Build(conf.ProviderSet, data.ProviderSet, client.ProviderSet, memory.ProviderSet, biz.ProviderSet, service.ProviderSet, server.ProviderSet, newApp)
 	return nil, nil, nil
 }

@@ -20,9 +20,45 @@ service Companion {
     };
   }
 
+  rpc ListConversations(ListConversationsRequest) returns (ConversationListReply) {
+    option (google.api.http) = {
+      get: "/companion/v1/conversations"
+    };
+  }
+
   rpc SendMessage(SendMessageRequest) returns (SendMessageReply) {
     option (google.api.http) = {
       post: "/companion/v1/conversations/{conversation_id}/messages"
+      body: "*"
+    };
+  }
+
+  rpc SendMessageStream(SendMessageRequest) returns (stream MessageChunk);
+
+  rpc SubmitMemoryFeedback(MemoryFeedbackRequest) returns (MemoryFeedbackReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/conversations/{conversation_id}/memory-feedback"
+      body: "*"
+    };
+  }
+
+  rpc CloseConversation(CloseConversationRequest) returns (ConversationReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/conversations/{conversation_id}/close"
+      body: "*"
+    };
+  }
+
+  rpc ExportData(ExportDataRequest) returns (ExportDataReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/data/export"
+      body: "*"
+    };
+  }
+
+  rpc DeleteData(DeleteDataRequest) returns (DeleteDataReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/data/delete"
       body: "*"
     };
   }
@@ -54,6 +90,10 @@ message GetConversationRequest {
   string conversation_id = 1;
 }
 
+message ListConversationsRequest {
+  int32 limit = 1;
+}
+
 message SendMessageRequest {
   string conversation_id = 1;
   string content = 2;
@@ -63,7 +103,57 @@ message ConversationReply {
   Conversation conversation = 1;
 }
 
+message ConversationListReply {
+  repeated Conversation conversations = 1;
+}
+
 message SendMessageReply {
   ConversationMessage user_message = 1;
   ConversationMessage assistant_message = 2;
+}
+
+message MessageChunk {
+  string message_id = 1;
+  string delta = 2;
+  string finish_reason = 3;
+  bool done = 4;
+}
+
+message MemoryFeedbackRequest {
+  string conversation_id = 1;
+  string message_id = 2;
+  string action = 3;
+  string kind = 4;
+  string content = 5;
+}
+
+message MemoryFeedbackReply {
+  bool accepted = 1;
+}
+
+message CloseConversationRequest {
+  string conversation_id = 1;
+}
+
+message ExportDataRequest {}
+
+message ExportDataReply {
+  repeated Conversation conversations = 1;
+  repeated MemorySnapshot memories = 2;
+}
+
+message MemorySnapshot {
+  string memory_id = 1;
+  string layer = 2;
+  string kind = 3;
+  string content = 4;
+  string status = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message DeleteDataRequest {}
+
+message DeleteDataReply {
+  bool accepted = 1;
 }

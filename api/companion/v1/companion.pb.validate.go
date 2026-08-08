@@ -500,6 +500,110 @@ var _ interface {
 	ErrorName() string
 } = GetConversationRequestValidationError{}
 
+// Validate checks the field values on ListConversationsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListConversationsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListConversationsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListConversationsRequestMultiError, or nil if none found.
+func (m *ListConversationsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListConversationsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Limit
+
+	if len(errors) > 0 {
+		return ListConversationsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListConversationsRequestMultiError is an error wrapping multiple validation
+// errors returned by ListConversationsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListConversationsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListConversationsRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListConversationsRequestMultiError) AllErrors() []error { return m }
+
+// ListConversationsRequestValidationError is the validation error returned by
+// ListConversationsRequest.Validate if the designated constraints aren't met.
+type ListConversationsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListConversationsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListConversationsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListConversationsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListConversationsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListConversationsRequestValidationError) ErrorName() string {
+	return "ListConversationsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListConversationsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListConversationsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListConversationsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListConversationsRequestValidationError{}
+
 // Validate checks the field values on SendMessageRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -737,6 +841,142 @@ var _ interface {
 	ErrorName() string
 } = ConversationReplyValidationError{}
 
+// Validate checks the field values on ConversationListReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConversationListReply) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConversationListReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConversationListReplyMultiError, or nil if none found.
+func (m *ConversationListReply) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConversationListReply) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConversations() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConversationListReplyValidationError{
+						field:  fmt.Sprintf("Conversations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConversationListReplyValidationError{
+						field:  fmt.Sprintf("Conversations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConversationListReplyValidationError{
+					field:  fmt.Sprintf("Conversations[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ConversationListReplyMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConversationListReplyMultiError is an error wrapping multiple validation
+// errors returned by ConversationListReply.ValidateAll() if the designated
+// constraints aren't met.
+type ConversationListReplyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConversationListReplyMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConversationListReplyMultiError) AllErrors() []error { return m }
+
+// ConversationListReplyValidationError is the validation error returned by
+// ConversationListReply.Validate if the designated constraints aren't met.
+type ConversationListReplyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConversationListReplyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConversationListReplyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConversationListReplyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConversationListReplyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConversationListReplyValidationError) ErrorName() string {
+	return "ConversationListReplyValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConversationListReplyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConversationListReply.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConversationListReplyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConversationListReplyValidationError{}
+
 // Validate checks the field values on SendMessageReply with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -894,3 +1134,1018 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SendMessageReplyValidationError{}
+
+// Validate checks the field values on MessageChunk with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MessageChunk) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MessageChunk with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MessageChunkMultiError, or
+// nil if none found.
+func (m *MessageChunk) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MessageChunk) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MessageId
+
+	// no validation rules for Delta
+
+	// no validation rules for FinishReason
+
+	// no validation rules for Done
+
+	if len(errors) > 0 {
+		return MessageChunkMultiError(errors)
+	}
+
+	return nil
+}
+
+// MessageChunkMultiError is an error wrapping multiple validation errors
+// returned by MessageChunk.ValidateAll() if the designated constraints aren't met.
+type MessageChunkMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MessageChunkMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MessageChunkMultiError) AllErrors() []error { return m }
+
+// MessageChunkValidationError is the validation error returned by
+// MessageChunk.Validate if the designated constraints aren't met.
+type MessageChunkValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MessageChunkValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MessageChunkValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MessageChunkValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MessageChunkValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MessageChunkValidationError) ErrorName() string { return "MessageChunkValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MessageChunkValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMessageChunk.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MessageChunkValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MessageChunkValidationError{}
+
+// Validate checks the field values on MemoryFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MemoryFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemoryFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MemoryFeedbackRequestMultiError, or nil if none found.
+func (m *MemoryFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemoryFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	// no validation rules for MessageId
+
+	// no validation rules for Action
+
+	// no validation rules for Kind
+
+	// no validation rules for Content
+
+	if len(errors) > 0 {
+		return MemoryFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemoryFeedbackRequestMultiError is an error wrapping multiple validation
+// errors returned by MemoryFeedbackRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MemoryFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemoryFeedbackRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemoryFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// MemoryFeedbackRequestValidationError is the validation error returned by
+// MemoryFeedbackRequest.Validate if the designated constraints aren't met.
+type MemoryFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemoryFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemoryFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemoryFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemoryFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemoryFeedbackRequestValidationError) ErrorName() string {
+	return "MemoryFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MemoryFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemoryFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemoryFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemoryFeedbackRequestValidationError{}
+
+// Validate checks the field values on MemoryFeedbackReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MemoryFeedbackReply) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemoryFeedbackReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MemoryFeedbackReplyMultiError, or nil if none found.
+func (m *MemoryFeedbackReply) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemoryFeedbackReply) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Accepted
+
+	if len(errors) > 0 {
+		return MemoryFeedbackReplyMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemoryFeedbackReplyMultiError is an error wrapping multiple validation
+// errors returned by MemoryFeedbackReply.ValidateAll() if the designated
+// constraints aren't met.
+type MemoryFeedbackReplyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemoryFeedbackReplyMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemoryFeedbackReplyMultiError) AllErrors() []error { return m }
+
+// MemoryFeedbackReplyValidationError is the validation error returned by
+// MemoryFeedbackReply.Validate if the designated constraints aren't met.
+type MemoryFeedbackReplyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemoryFeedbackReplyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemoryFeedbackReplyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemoryFeedbackReplyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemoryFeedbackReplyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemoryFeedbackReplyValidationError) ErrorName() string {
+	return "MemoryFeedbackReplyValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MemoryFeedbackReplyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemoryFeedbackReply.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemoryFeedbackReplyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemoryFeedbackReplyValidationError{}
+
+// Validate checks the field values on CloseConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CloseConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CloseConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CloseConversationRequestMultiError, or nil if none found.
+func (m *CloseConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CloseConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	if len(errors) > 0 {
+		return CloseConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CloseConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by CloseConversationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CloseConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CloseConversationRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CloseConversationRequestMultiError) AllErrors() []error { return m }
+
+// CloseConversationRequestValidationError is the validation error returned by
+// CloseConversationRequest.Validate if the designated constraints aren't met.
+type CloseConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CloseConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CloseConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CloseConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CloseConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CloseConversationRequestValidationError) ErrorName() string {
+	return "CloseConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CloseConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCloseConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CloseConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CloseConversationRequestValidationError{}
+
+// Validate checks the field values on ExportDataRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExportDataRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportDataRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportDataRequestMultiError, or nil if none found.
+func (m *ExportDataRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportDataRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ExportDataRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportDataRequestMultiError is an error wrapping multiple validation errors
+// returned by ExportDataRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExportDataRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportDataRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportDataRequestMultiError) AllErrors() []error { return m }
+
+// ExportDataRequestValidationError is the validation error returned by
+// ExportDataRequest.Validate if the designated constraints aren't met.
+type ExportDataRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportDataRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportDataRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportDataRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportDataRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportDataRequestValidationError) ErrorName() string {
+	return "ExportDataRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExportDataRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportDataRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportDataRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportDataRequestValidationError{}
+
+// Validate checks the field values on ExportDataReply with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ExportDataReply) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportDataReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportDataReplyMultiError, or nil if none found.
+func (m *ExportDataReply) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportDataReply) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConversations() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportDataReplyValidationError{
+						field:  fmt.Sprintf("Conversations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportDataReplyValidationError{
+						field:  fmt.Sprintf("Conversations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportDataReplyValidationError{
+					field:  fmt.Sprintf("Conversations[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetMemories() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportDataReplyValidationError{
+						field:  fmt.Sprintf("Memories[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportDataReplyValidationError{
+						field:  fmt.Sprintf("Memories[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportDataReplyValidationError{
+					field:  fmt.Sprintf("Memories[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ExportDataReplyMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportDataReplyMultiError is an error wrapping multiple validation errors
+// returned by ExportDataReply.ValidateAll() if the designated constraints
+// aren't met.
+type ExportDataReplyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportDataReplyMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportDataReplyMultiError) AllErrors() []error { return m }
+
+// ExportDataReplyValidationError is the validation error returned by
+// ExportDataReply.Validate if the designated constraints aren't met.
+type ExportDataReplyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportDataReplyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportDataReplyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportDataReplyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportDataReplyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportDataReplyValidationError) ErrorName() string { return "ExportDataReplyValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportDataReplyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportDataReply.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportDataReplyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportDataReplyValidationError{}
+
+// Validate checks the field values on MemorySnapshot with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MemorySnapshot) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MemorySnapshot with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MemorySnapshotMultiError,
+// or nil if none found.
+func (m *MemorySnapshot) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MemorySnapshot) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MemoryId
+
+	// no validation rules for Layer
+
+	// no validation rules for Kind
+
+	// no validation rules for Content
+
+	// no validation rules for Status
+
+	// no validation rules for CreatedAt
+
+	// no validation rules for UpdatedAt
+
+	if len(errors) > 0 {
+		return MemorySnapshotMultiError(errors)
+	}
+
+	return nil
+}
+
+// MemorySnapshotMultiError is an error wrapping multiple validation errors
+// returned by MemorySnapshot.ValidateAll() if the designated constraints
+// aren't met.
+type MemorySnapshotMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MemorySnapshotMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MemorySnapshotMultiError) AllErrors() []error { return m }
+
+// MemorySnapshotValidationError is the validation error returned by
+// MemorySnapshot.Validate if the designated constraints aren't met.
+type MemorySnapshotValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MemorySnapshotValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MemorySnapshotValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MemorySnapshotValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MemorySnapshotValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MemorySnapshotValidationError) ErrorName() string { return "MemorySnapshotValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MemorySnapshotValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMemorySnapshot.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MemorySnapshotValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MemorySnapshotValidationError{}
+
+// Validate checks the field values on DeleteDataRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *DeleteDataRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteDataRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteDataRequestMultiError, or nil if none found.
+func (m *DeleteDataRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteDataRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteDataRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteDataRequestMultiError is an error wrapping multiple validation errors
+// returned by DeleteDataRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeleteDataRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteDataRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteDataRequestMultiError) AllErrors() []error { return m }
+
+// DeleteDataRequestValidationError is the validation error returned by
+// DeleteDataRequest.Validate if the designated constraints aren't met.
+type DeleteDataRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteDataRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteDataRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteDataRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteDataRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteDataRequestValidationError) ErrorName() string {
+	return "DeleteDataRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteDataRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteDataRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteDataRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteDataRequestValidationError{}
+
+// Validate checks the field values on DeleteDataReply with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *DeleteDataReply) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteDataReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteDataReplyMultiError, or nil if none found.
+func (m *DeleteDataReply) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteDataReply) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Accepted
+
+	if len(errors) > 0 {
+		return DeleteDataReplyMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteDataReplyMultiError is an error wrapping multiple validation errors
+// returned by DeleteDataReply.ValidateAll() if the designated constraints
+// aren't met.
+type DeleteDataReplyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteDataReplyMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteDataReplyMultiError) AllErrors() []error { return m }
+
+// DeleteDataReplyValidationError is the validation error returned by
+// DeleteDataReply.Validate if the designated constraints aren't met.
+type DeleteDataReplyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteDataReplyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteDataReplyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteDataReplyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteDataReplyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteDataReplyValidationError) ErrorName() string { return "DeleteDataReplyValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DeleteDataReplyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteDataReply.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteDataReplyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteDataReplyValidationError{}

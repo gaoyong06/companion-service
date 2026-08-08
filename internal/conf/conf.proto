@@ -11,6 +11,7 @@ message Bootstrap {
   Data data = 2;
   ModelGateway model_gateway = 3;
   Log log = 4;
+  Memory memory = 5;
 }
 
 message Server {
@@ -45,6 +46,11 @@ message ModelGateway {
   string grpc_addr = 1;
   google.protobuf.Duration timeout = 2;
   string api_key_env = 3;
+}
+
+message Memory {
+  bool enabled = 1;
+  int32 queue_size = 2;
 }
 
 message Log {

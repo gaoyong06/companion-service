@@ -7,6 +7,29 @@ info:
     version: 0.0.1
 paths:
     /companion/v1/conversations:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_ListConversations
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConversationListReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         post:
             tags:
                 - Companion
@@ -54,6 +77,66 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /companion/v1/conversations/{conversationId}/close:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_CloseConversation
+            parameters:
+                - name: conversationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CloseConversationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConversationReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /companion/v1/conversations/{conversationId}/memory-feedback:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_SubmitMemoryFeedback
+            parameters:
+                - name: conversationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MemoryFeedbackRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MemoryFeedbackReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /companion/v1/conversations/{conversationId}/messages:
         post:
             tags:
@@ -84,8 +167,61 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /companion/v1/data/delete:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_DeleteData
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DeleteDataRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteDataReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /companion/v1/data/export:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_ExportData
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportDataRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportDataReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
 components:
     schemas:
+        CloseConversationRequest:
+            type: object
+            properties:
+                conversationId:
+                    type: string
         Conversation:
             type: object
             properties:
@@ -107,6 +243,13 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        ConversationListReply:
+            type: object
+            properties:
+                conversations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Conversation'
         ConversationMessage:
             type: object
             properties:
@@ -128,6 +271,28 @@ components:
             properties:
                 companionId:
                     type: string
+        DeleteDataReply:
+            type: object
+            properties:
+                accepted:
+                    type: boolean
+        DeleteDataRequest:
+            type: object
+            properties: {}
+        ExportDataReply:
+            type: object
+            properties:
+                conversations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Conversation'
+                memories:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MemorySnapshot'
+        ExportDataRequest:
+            type: object
+            properties: {}
         GoogleProtobufAny:
             type: object
             properties:
@@ -136,6 +301,41 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        MemoryFeedbackReply:
+            type: object
+            properties:
+                accepted:
+                    type: boolean
+        MemoryFeedbackRequest:
+            type: object
+            properties:
+                conversationId:
+                    type: string
+                messageId:
+                    type: string
+                action:
+                    type: string
+                kind:
+                    type: string
+                content:
+                    type: string
+        MemorySnapshot:
+            type: object
+            properties:
+                memoryId:
+                    type: string
+                layer:
+                    type: string
+                kind:
+                    type: string
+                content:
+                    type: string
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
         SendMessageReply:
             type: object
             properties:

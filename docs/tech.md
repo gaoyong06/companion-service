@@ -72,8 +72,8 @@ Infrastructure Layer
 
 - `companion-service` 已实现创建会话、查询会话、保存消息和非流式 Chat 调用。
 - `model-gateway` 已实现 OpenAI-compatible Chat、Embedding 和模型列表。
-- MySQL 持久化只覆盖会话和消息；记忆抽取、分层记忆、向量召回、STT、TTS 和流式响应属于后续迭代。
-- 服务内部仍按接口隔离，后续记忆任务可以在 `companion-service` 内异步执行，再根据独立扩缩容需求拆分。
+- MySQL 持久化覆盖会话、消息和 L1 记忆；当前记忆使用异步候选抽取和有限召回，分层记忆、向量召回、STT 和 TTS 属于后续迭代。
+- 服务内部仍按接口隔离，记忆任务已在 `companion-service` 内异步执行，再根据独立扩缩容需求拆分。
 
 后续可以按负载和数据隔离需求拆分：
 
@@ -94,8 +94,8 @@ companion-service
 2. Conversation Orchestrator 写入用户消息事件。
 3. Safety Policy 对当前输入做快速检查。
 4. Context Builder 读取最近消息、会话摘要、精简 Persona、关系状态和召回结果。
-5. Model Gateway 发起模型请求；当前 0.1 使用非流式响应。
-6. 服务写入 Assistant 消息并返回完整回复；流式 token 转发属于后续迭代。
+5. Model Gateway 发起模型请求；非流式和流式两种链路均可用。
+6. 服务写入 Assistant 消息并返回完整回复，流式链路通过 SSE 或 gRPC 转发 token。
 7. 后续异步任务判断是否需要 L1 抽取、L2 场景聚合和 Persona 更新。
 
 ### 4.2 语音请求
@@ -205,26 +205,46 @@ RelationshipState 只表达可观察和可配置的交互策略，不表达 AI �
 
 ## 6. 数据存储
 
-### 6.1 MVP 推荐
+### 6.1 当前 0.1 实现
 
 | 数据 | 存储 | 原因 |
 | --- | --- | --- |
-| 用户、会话、消息元数据 | PostgreSQL | 事务、权限和审计清晰 |
-| L1/L2/L3/R 结构化记录 | PostgreSQL JSONB + 普通列 | 支持版本和状态变更 |
-| Embedding | pgvector 或兼容 Vector Store | MVP 减少基础设施数量 |
-| 原始音频和大文本 | 对象存储 | 避免数据库膨胀 |
-| 异步任务 | 可靠队列 | 支持重试、幂等和删除传播 |
-| 热门会话状态 | Redis，可选 | 降低重复读取延迟 |
+| 会话、消息、L1 记忆 | MySQL | 当前代码使用 GORM MySQL 驱动；表结构见 `docs/sql/companion-service.sql` |
+| 模型调用配置 | 环境变量和 YAML | `model-gateway` 当前无状态，不落库 |
+| Embedding、STT、TTS | 当前未持久化 | 供应商调用通过 `model-gateway` 转发 |
 
 TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机部署。生产环境应保留 Repository 接口，避免业务层绑定具体存储实现。
 
-### 6.2 索引
+### 6.2 当前数据库和建库入口
 
-- `messages(user_id, conversation_id, created_at)`
-- `memories(user_id, layer, status, updated_at)`
-- `memories(user_id, type, status)`
-- `memory_sources(memory_id, message_id)`
-- 向量索引按 `user_id` 做过滤，不允许跨用户召回。
+- 当前只需要创建一个 MySQL 数据库：`companion-service`。
+- `model-gateway` 不需要创建数据库。
+- 建库、连接参数和手动执行方式见 `docs/database.md`。
+- 当前 SQL 只创建 `companion_conversation`、`companion_message` 和 `companion_memory` 三张表。
+
+### 6.3 未来演进方案（尚未实现）
+
+以下方案属于后续能力的候选设计，不能作为当前部署前置条件：
+
+| 数据 | 候选存储 | 触发条件 |
+| --- | --- | --- |
+| L2/L3/R 版本化记忆 | PostgreSQL JSONB + 普通列 | 分层记忆和版本审计进入开发 |
+| Embedding | PostgreSQL + pgvector 或独立 Vector Store | 向量召回进入开发 |
+| 原始音频和大文本 | 对象存储 | 语音和大内容持久化进入开发 |
+| 异步任务 | 可靠队列 | 任务量和独立重试需求超过进程内队列能力 |
+| 热门会话状态 | Redis，可选 | 监测证明缓存能降低实际延迟 |
+
+在这些能力实现之前，不创建 PostgreSQL、pgvector、Redis 或队列资源，也不提前编写没有调用方的表。
+
+### 6.4 当前索引
+
+- `companion_conversation(user_id, created_at)`
+- `companion_message(conversation_id, created_at)`
+- `companion_message(user_id, created_at)`
+- `companion_memory(user_id, status, importance, updated_at)`
+- `companion_memory(source_message_id)`
+
+向量索引、`memory_sources` 表和按层级的 PostgreSQL 索引均属于未来设计，当前不存在。
 
 ## 7. 记忆流水线
 
@@ -288,15 +308,21 @@ PromptContext
 
 召回采用关键词、向量和规则的混合策略。单次召回必须设置总字符数和超时，超时则跳过长期记忆，不阻塞当前回复。
 
+当前 0.1 已接入受控 L1 记忆召回，Context Builder 对记忆和最近消息共设置 24 KiB 总字符预算，始终保留当前输入，并从最新历史向前截取可用消息。
+
+消息进入模型前会经过基础危机词检测。命中明确的自伤或轻生表达时，服务保存用户消息并返回固定安全转介文本，不调用模型，也不提交记忆抽取任务；这不是医疗或危机干预服务的替代品。
+
 ## 9. API 草案
 
 ### 9.1 对话
 
 ```http
-POST /api/v1/conversations
-POST /api/v1/conversations/{conversation_id}/messages
-GET  /api/v1/conversations/{conversation_id}
-POST /api/v1/conversations/{conversation_id}/close
+POST /companion/v1/conversations
+GET  /companion/v1/conversations
+POST /companion/v1/conversations/{conversation_id}/messages
+POST /companion/v1/conversations/{conversation_id}/messages:stream
+GET  /companion/v1/conversations/{conversation_id}
+POST /companion/v1/conversations/{conversation_id}/close
 ```
 
 消息请求示例：
@@ -310,7 +336,9 @@ POST /api/v1/conversations/{conversation_id}/close
 }
 ```
 
-响应采用 SSE 或 WebSocket 流式返回，事件类型至少包括：
+当前 SSE 返回 `data: MessageChunk` JSON；事件封装和 WebSocket 属于后续协议演进。
+
+规划中的事件类型包括：
 
 ```text
 message.started
@@ -323,7 +351,7 @@ message.failed
 ### 9.2 轻量记忆反馈
 
 ```http
-POST /api/v1/memory-feedback
+POST /companion/v1/conversations/{conversation_id}/memory-feedback
 ```
 
 请求示例：
@@ -333,11 +361,12 @@ POST /api/v1/memory-feedback
   "conversation_id": "conv_01J...",
   "message_id": "msg_01J...",
   "action": "forget",
-  "target": "current_fact"
+  "kind": "fact",
+  "content": "用户已经搬到杭州"
 }
 ```
 
-`action` 支持 `correct`、`forget` 和 `do_not_remember`。MVP 的 `correct` 只提交反馈事件，由服务端重新评估记忆，不要求客户端编辑内部记忆字段。
+`action` 支持 `correct`、`forget` 和 `do_not_remember`。`correct` 会先撤销来源消息产生的记忆，再写入一条经过字段校验的 L1 记忆；普通用户不会获得按记忆 ID 的 CRUD。
 
 MVP 不向普通用户暴露按记忆 ID 浏览和修改的完整 CRUD。服务内部仍保留版本化 Memory Store，便于冲突处理、删除传播、质量评估和后台审计。
 
@@ -346,9 +375,8 @@ MVP 不向普通用户暴露按记忆 ID 浏览和修改的完整 CRUD。服务�
 ```http
 GET   /api/v1/consents
 PATCH /api/v1/consents
-POST  /api/v1/data/export
-POST  /api/v1/data/delete
-GET   /api/v1/data/delete/{job_id}
+POST  /companion/v1/data/export
+POST  /companion/v1/data/delete
 ```
 
 ### 9.4 错误契约

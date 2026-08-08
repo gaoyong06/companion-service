@@ -1,21 +1,24 @@
 server:
   http:
     network: tcp
-    addr: 0.0.0.0:8140
+    addr: 0.0.0.0:8131
     timeout: 120s
   grpc:
     network: tcp
-    addr: 0.0.0.0:9140
+    addr: 0.0.0.0:9131
     timeout: 120s
 data:
   database:
-    source: root:root@tcp(127.0.0.1:3306)/companion-service?charset=utf8mb4&parseTime=True&loc=Local
+    source: root:@tcp(127.0.0.1:3306)/companion-service?charset=utf8mb4&parseTime=True&loc=Local
     max_idle_conns: 5
     max_open_conns: 20
 model_gateway:
   grpc_addr: 127.0.0.1:9130
   timeout: 120s
   api_key_env: MODEL_GATEWAY_INBOUND_API_KEY
+memory:
+  enabled: true
+  queue_size: 100
 log:
   level: debug
   format: console

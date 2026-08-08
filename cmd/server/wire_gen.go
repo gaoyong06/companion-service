@@ -11,6 +11,7 @@ import (
 	"companion-service/internal/client"
 	"companion-service/internal/conf"
 	"companion-service/internal/data"
+	"companion-service/internal/memory"
 	"companion-service/internal/server"
 	"companion-service/internal/service"
 	"github.com/go-kratos/kratos/v2"
@@ -36,13 +37,16 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		cleanup()
 		return nil, nil, err
 	}
-	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient)
+	confMemory := conf.NewMemoryConfig(bootstrap)
+	processor, cleanup3 := memory.NewProcessor(confMemory, store, modelGatewayClient, logger)
+	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient, processor)
 	companionService := service.NewCompanionService(companionUsecase)
 	httpServer := server.NewHTTPServer(http, companionService)
 	grpc := conf.NewGRPCConfig(bootstrap)
 	grpcServer := server.NewGRPCServer(grpc, companionService)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
+		cleanup3()
 		cleanup2()
 		cleanup()
 	}, nil

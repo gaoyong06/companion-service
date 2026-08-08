@@ -14,6 +14,7 @@ import (
 	kratosgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 )
 
 type ModelGatewayClient struct {
@@ -52,4 +53,29 @@ func (c *ModelGatewayClient) Chat(ctx context.Context, req *modelv1.ChatCompleti
 	defer cancel()
 	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
 	return c.client.ChatCompletion(callCtx, req)
+}
+
+func (c *ModelGatewayClient) ChatStream(ctx context.Context, req *modelv1.ChatCompletionRequest) (modelv1.ModelGateway_ChatCompletionStreamClient, error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
+	request := proto.Clone(req).(*modelv1.ChatCompletionRequest)
+	request.Stream = true
+	stream, err := c.client.ChatCompletionStream(callCtx, request)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	return &cancelableChatStream{ModelGateway_ChatCompletionStreamClient: stream, cancel: cancel}, nil
+}
+
+// cancelableChatStream 将请求 context 的释放绑定到流关闭动作，避免 ChatStream 返回时提前取消 gRPC 流。
+type cancelableChatStream struct {
+	modelv1.ModelGateway_ChatCompletionStreamClient
+	cancel context.CancelFunc
+}
+
+func (s *cancelableChatStream) CloseSend() error {
+	err := s.ModelGateway_ChatCompletionStreamClient.CloseSend()
+	s.cancel()
+	return err
 }

@@ -28,6 +28,7 @@ type Bootstrap struct {
 	Data          *Data                  `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	ModelGateway  *ModelGateway          `protobuf:"bytes,3,opt,name=model_gateway,json=modelGateway,proto3" json:"model_gateway,omitempty"`
 	Log           *Log                   `protobuf:"bytes,4,opt,name=log,proto3" json:"log,omitempty"`
+	Memory        *Memory                `protobuf:"bytes,5,opt,name=memory,proto3" json:"memory,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -86,6 +87,13 @@ func (x *Bootstrap) GetModelGateway() *ModelGateway {
 func (x *Bootstrap) GetLog() *Log {
 	if x != nil {
 		return x.Log
+	}
+	return nil
+}
+
+func (x *Bootstrap) GetMemory() *Memory {
+	if x != nil {
+		return x.Memory
 	}
 	return nil
 }
@@ -434,6 +442,58 @@ func (x *ModelGateway) GetApiKeyEnv() string {
 	return ""
 }
 
+type Memory struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	QueueSize     int32                  `protobuf:"varint,2,opt,name=queue_size,json=queueSize,proto3" json:"queue_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Memory) Reset() {
+	*x = Memory{}
+	mi := &file_conf_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Memory) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Memory) ProtoMessage() {}
+
+func (x *Memory) ProtoReflect() protoreflect.Message {
+	mi := &file_conf_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Memory.ProtoReflect.Descriptor instead.
+func (*Memory) Descriptor() ([]byte, []int) {
+	return file_conf_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Memory) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *Memory) GetQueueSize() int32 {
+	if x != nil {
+		return x.QueueSize
+	}
+	return 0
+}
+
 type Log struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Level         string                 `protobuf:"bytes,1,opt,name=level,proto3" json:"level,omitempty"`
@@ -450,7 +510,7 @@ type Log struct {
 
 func (x *Log) Reset() {
 	*x = Log{}
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +522,7 @@ func (x *Log) String() string {
 func (*Log) ProtoMessage() {}
 
 func (x *Log) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +535,7 @@ func (x *Log) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Log.ProtoReflect.Descriptor instead.
 func (*Log) Descriptor() ([]byte, []int) {
-	return file_conf_proto_rawDescGZIP(), []int{7}
+	return file_conf_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Log) GetLevel() string {
@@ -539,13 +599,14 @@ var File_conf_proto protoreflect.FileDescriptor
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x12\x04conf\x1a\x1egoogle/protobuf/duration.proto\"\xa7\x01\n" +
+	"conf.proto\x12\x04conf\x1a\x1egoogle/protobuf/duration.proto\"\xcd\x01\n" +
 	"\tBootstrap\x12$\n" +
 	"\x06server\x18\x01 \x01(\v2\f.conf.ServerR\x06server\x12\x1e\n" +
 	"\x04data\x18\x02 \x01(\v2\n" +
 	".conf.DataR\x04data\x127\n" +
 	"\rmodel_gateway\x18\x03 \x01(\v2\x12.conf.ModelGatewayR\fmodelGateway\x12\x1b\n" +
-	"\x03log\x18\x04 \x01(\v2\t.conf.LogR\x03log\"H\n" +
+	"\x03log\x18\x04 \x01(\v2\t.conf.LogR\x03log\x12$\n" +
+	"\x06memory\x18\x05 \x01(\v2\f.conf.MemoryR\x06memory\"H\n" +
 	"\x06Server\x12\x1e\n" +
 	"\x04http\x18\x01 \x01(\v2\n" +
 	".conf.HTTPR\x04http\x12\x1e\n" +
@@ -570,7 +631,11 @@ const file_conf_proto_rawDesc = "" +
 	"\fModelGateway\x12\x1b\n" +
 	"\tgrpc_addr\x18\x01 \x01(\tR\bgrpcAddr\x123\n" +
 	"\atimeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12\x1e\n" +
-	"\vapi_key_env\x18\x03 \x01(\tR\tapiKeyEnv\"\xd9\x01\n" +
+	"\vapi_key_env\x18\x03 \x01(\tR\tapiKeyEnv\"A\n" +
+	"\x06Memory\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1d\n" +
+	"\n" +
+	"queue_size\x18\x02 \x01(\x05R\tqueueSize\"\xd9\x01\n" +
 	"\x03Log\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\tR\x05level\x12\x16\n" +
 	"\x06format\x18\x02 \x01(\tR\x06format\x12\x16\n" +
@@ -594,7 +659,7 @@ func file_conf_proto_rawDescGZIP() []byte {
 	return file_conf_proto_rawDescData
 }
 
-var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_conf_proto_goTypes = []any{
 	(*Bootstrap)(nil),           // 0: conf.Bootstrap
 	(*Server)(nil),              // 1: conf.Server
@@ -603,25 +668,27 @@ var file_conf_proto_goTypes = []any{
 	(*Data)(nil),                // 4: conf.Data
 	(*Database)(nil),            // 5: conf.Database
 	(*ModelGateway)(nil),        // 6: conf.ModelGateway
-	(*Log)(nil),                 // 7: conf.Log
-	(*durationpb.Duration)(nil), // 8: google.protobuf.Duration
+	(*Memory)(nil),              // 7: conf.Memory
+	(*Log)(nil),                 // 8: conf.Log
+	(*durationpb.Duration)(nil), // 9: google.protobuf.Duration
 }
 var file_conf_proto_depIdxs = []int32{
 	1,  // 0: conf.Bootstrap.server:type_name -> conf.Server
 	4,  // 1: conf.Bootstrap.data:type_name -> conf.Data
 	6,  // 2: conf.Bootstrap.model_gateway:type_name -> conf.ModelGateway
-	7,  // 3: conf.Bootstrap.log:type_name -> conf.Log
-	2,  // 4: conf.Server.http:type_name -> conf.HTTP
-	3,  // 5: conf.Server.grpc:type_name -> conf.GRPC
-	8,  // 6: conf.HTTP.timeout:type_name -> google.protobuf.Duration
-	8,  // 7: conf.GRPC.timeout:type_name -> google.protobuf.Duration
-	5,  // 8: conf.Data.database:type_name -> conf.Database
-	8,  // 9: conf.ModelGateway.timeout:type_name -> google.protobuf.Duration
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	8,  // 3: conf.Bootstrap.log:type_name -> conf.Log
+	7,  // 4: conf.Bootstrap.memory:type_name -> conf.Memory
+	2,  // 5: conf.Server.http:type_name -> conf.HTTP
+	3,  // 6: conf.Server.grpc:type_name -> conf.GRPC
+	9,  // 7: conf.HTTP.timeout:type_name -> google.protobuf.Duration
+	9,  // 8: conf.GRPC.timeout:type_name -> google.protobuf.Duration
+	5,  // 9: conf.Data.database:type_name -> conf.Database
+	9,  // 10: conf.ModelGateway.timeout:type_name -> google.protobuf.Duration
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_conf_proto_init() }
@@ -635,7 +702,7 @@ func file_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_conf_proto_rawDesc), len(file_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

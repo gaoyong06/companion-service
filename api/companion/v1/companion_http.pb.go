@@ -19,21 +19,36 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationCompanionCloseConversation = "/companion.v1.Companion/CloseConversation"
 const OperationCompanionCreateConversation = "/companion.v1.Companion/CreateConversation"
+const OperationCompanionDeleteData = "/companion.v1.Companion/DeleteData"
+const OperationCompanionExportData = "/companion.v1.Companion/ExportData"
 const OperationCompanionGetConversation = "/companion.v1.Companion/GetConversation"
+const OperationCompanionListConversations = "/companion.v1.Companion/ListConversations"
 const OperationCompanionSendMessage = "/companion.v1.Companion/SendMessage"
+const OperationCompanionSubmitMemoryFeedback = "/companion.v1.Companion/SubmitMemoryFeedback"
 
 type CompanionHTTPServer interface {
+	CloseConversation(context.Context, *CloseConversationRequest) (*ConversationReply, error)
 	CreateConversation(context.Context, *CreateConversationRequest) (*ConversationReply, error)
+	DeleteData(context.Context, *DeleteDataRequest) (*DeleteDataReply, error)
+	ExportData(context.Context, *ExportDataRequest) (*ExportDataReply, error)
 	GetConversation(context.Context, *GetConversationRequest) (*ConversationReply, error)
+	ListConversations(context.Context, *ListConversationsRequest) (*ConversationListReply, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageReply, error)
+	SubmitMemoryFeedback(context.Context, *MemoryFeedbackRequest) (*MemoryFeedbackReply, error)
 }
 
 func RegisterCompanionHTTPServer(s *http.Server, srv CompanionHTTPServer) {
 	r := s.Route("/")
 	r.POST("/companion/v1/conversations", _Companion_CreateConversation0_HTTP_Handler(srv))
 	r.GET("/companion/v1/conversations/{conversation_id}", _Companion_GetConversation0_HTTP_Handler(srv))
+	r.GET("/companion/v1/conversations", _Companion_ListConversations0_HTTP_Handler(srv))
 	r.POST("/companion/v1/conversations/{conversation_id}/messages", _Companion_SendMessage0_HTTP_Handler(srv))
+	r.POST("/companion/v1/conversations/{conversation_id}/memory-feedback", _Companion_SubmitMemoryFeedback0_HTTP_Handler(srv))
+	r.POST("/companion/v1/conversations/{conversation_id}/close", _Companion_CloseConversation0_HTTP_Handler(srv))
+	r.POST("/companion/v1/data/export", _Companion_ExportData0_HTTP_Handler(srv))
+	r.POST("/companion/v1/data/delete", _Companion_DeleteData0_HTTP_Handler(srv))
 }
 
 func _Companion_CreateConversation0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
@@ -80,6 +95,25 @@ func _Companion_GetConversation0_HTTP_Handler(srv CompanionHTTPServer) func(ctx 
 	}
 }
 
+func _Companion_ListConversations0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListConversationsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionListConversations)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListConversations(ctx, req.(*ListConversationsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ConversationListReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _Companion_SendMessage0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in SendMessageRequest
@@ -105,10 +139,109 @@ func _Companion_SendMessage0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http
 	}
 }
 
+func _Companion_SubmitMemoryFeedback0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in MemoryFeedbackRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionSubmitMemoryFeedback)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SubmitMemoryFeedback(ctx, req.(*MemoryFeedbackRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*MemoryFeedbackReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_CloseConversation0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CloseConversationRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionCloseConversation)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CloseConversation(ctx, req.(*CloseConversationRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ConversationReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_ExportData0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ExportDataRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionExportData)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ExportData(ctx, req.(*ExportDataRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ExportDataReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_DeleteData0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteDataRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionDeleteData)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteData(ctx, req.(*DeleteDataRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteDataReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 type CompanionHTTPClient interface {
+	CloseConversation(ctx context.Context, req *CloseConversationRequest, opts ...http.CallOption) (rsp *ConversationReply, err error)
 	CreateConversation(ctx context.Context, req *CreateConversationRequest, opts ...http.CallOption) (rsp *ConversationReply, err error)
+	DeleteData(ctx context.Context, req *DeleteDataRequest, opts ...http.CallOption) (rsp *DeleteDataReply, err error)
+	ExportData(ctx context.Context, req *ExportDataRequest, opts ...http.CallOption) (rsp *ExportDataReply, err error)
 	GetConversation(ctx context.Context, req *GetConversationRequest, opts ...http.CallOption) (rsp *ConversationReply, err error)
+	ListConversations(ctx context.Context, req *ListConversationsRequest, opts ...http.CallOption) (rsp *ConversationListReply, err error)
 	SendMessage(ctx context.Context, req *SendMessageRequest, opts ...http.CallOption) (rsp *SendMessageReply, err error)
+	SubmitMemoryFeedback(ctx context.Context, req *MemoryFeedbackRequest, opts ...http.CallOption) (rsp *MemoryFeedbackReply, err error)
 }
 
 type CompanionHTTPClientImpl struct {
@@ -119,11 +252,50 @@ func NewCompanionHTTPClient(client *http.Client) CompanionHTTPClient {
 	return &CompanionHTTPClientImpl{client}
 }
 
+func (c *CompanionHTTPClientImpl) CloseConversation(ctx context.Context, in *CloseConversationRequest, opts ...http.CallOption) (*ConversationReply, error) {
+	var out ConversationReply
+	pattern := "/companion/v1/conversations/{conversation_id}/close"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionCloseConversation))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CompanionHTTPClientImpl) CreateConversation(ctx context.Context, in *CreateConversationRequest, opts ...http.CallOption) (*ConversationReply, error) {
 	var out ConversationReply
 	pattern := "/companion/v1/conversations"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationCompanionCreateConversation))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) DeleteData(ctx context.Context, in *DeleteDataRequest, opts ...http.CallOption) (*DeleteDataReply, error) {
+	var out DeleteDataReply
+	pattern := "/companion/v1/data/delete"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionDeleteData))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) ExportData(ctx context.Context, in *ExportDataRequest, opts ...http.CallOption) (*ExportDataReply, error) {
+	var out ExportDataReply
+	pattern := "/companion/v1/data/export"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionExportData))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
@@ -145,11 +317,37 @@ func (c *CompanionHTTPClientImpl) GetConversation(ctx context.Context, in *GetCo
 	return &out, nil
 }
 
+func (c *CompanionHTTPClientImpl) ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...http.CallOption) (*ConversationListReply, error) {
+	var out ConversationListReply
+	pattern := "/companion/v1/conversations"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionListConversations))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CompanionHTTPClientImpl) SendMessage(ctx context.Context, in *SendMessageRequest, opts ...http.CallOption) (*SendMessageReply, error) {
 	var out SendMessageReply
 	pattern := "/companion/v1/conversations/{conversation_id}/messages"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationCompanionSendMessage))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) SubmitMemoryFeedback(ctx context.Context, in *MemoryFeedbackRequest, opts ...http.CallOption) (*MemoryFeedbackReply, error) {
+	var out MemoryFeedbackReply
+	pattern := "/companion/v1/conversations/{conversation_id}/memory-feedback"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionSubmitMemoryFeedback))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
