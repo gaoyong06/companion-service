@@ -56,7 +56,7 @@ func TestBuildChatMessagesCanBuildSummaryHistoryWithoutEmptyInput(t *testing.T) 
 
 func TestBuildChatMessagesAddsFirstMeetingGuidanceOnlyForNewConversation(t *testing.T) {
 	first := BuildChatMessages(nil, nil, "hello")
-	if len(first) != 2 || !strings.Contains(first[0].Content, "第一次见面") {
+	if len(first) != 2 || !strings.Contains(first[0].Content, "我叫娜娜") || !strings.Contains(first[0].Content, "第一次见面") {
 		t.Fatalf("expected first meeting guidance, got %+v", first)
 	}
 	ongoing := BuildChatMessages([]data.MessageModel{{Role: "user", Content: "hello"}}, nil, "how are you")

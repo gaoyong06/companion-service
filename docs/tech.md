@@ -94,9 +94,10 @@ companion-service
 2. Conversation Orchestrator 写入用户消息事件。
 3. Safety Policy 对当前输入做快速检查。
 4. Context Builder 读取最近消息、会话摘要、精简 Persona、关系状态和召回结果。
-5. Model Gateway 发起模型请求；非流式和流式两种链路均可用。
-6. 服务写入 Assistant 消息并返回完整回复，流式链路通过 SSE 或 gRPC 转发 token。
-7. 后续异步任务判断是否需要 L1 抽取、L2 场景聚合和 Persona 更新。
+5. Context Builder 始终注入 Companion system prompt：首次对话执行简短认识流程；后续对话遵循陪伴优先、默认短回复、单问题和不主动建议规则。
+6. Model Gateway 发起模型请求；非流式和流式两种链路均可用，普通陪伴回复默认设置 `max_tokens=256`。
+7. 服务写入 Assistant 消息并返回完整回复，流式链路通过 SSE 或 gRPC 转发 token。
+8. 后续异步任务判断是否需要 L1 抽取、L2 场景聚合和 Persona 更新。
 
 ### 4.2 语音请求
 
