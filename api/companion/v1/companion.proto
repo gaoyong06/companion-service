@@ -7,28 +7,15 @@ option go_package = "companion-service/api/companion/v1;v1";
 import "google/api/annotations.proto";
 
 service Companion {
-  rpc CreateConversation(CreateConversationRequest) returns (ConversationReply) {
+  rpc GetTimeline(GetTimelineRequest) returns (TimelineReply) {
     option (google.api.http) = {
-      post: "/companion/v1/conversations"
-      body: "*"
-    };
-  }
-
-  rpc GetConversation(GetConversationRequest) returns (ConversationReply) {
-    option (google.api.http) = {
-      get: "/companion/v1/conversations/{conversation_id}"
-    };
-  }
-
-  rpc ListConversations(ListConversationsRequest) returns (ConversationListReply) {
-    option (google.api.http) = {
-      get: "/companion/v1/conversations"
+      get: "/companion/v1/timeline"
     };
   }
 
   rpc SendMessage(SendMessageRequest) returns (SendMessageReply) {
     option (google.api.http) = {
-      post: "/companion/v1/conversations/{conversation_id}/messages"
+      post: "/companion/v1/messages"
       body: "*"
     };
   }
@@ -37,49 +24,19 @@ service Companion {
 
   rpc SendAudioMessage(SendAudioMessageRequest) returns (SendAudioMessageReply) {
     option (google.api.http) = {
-      post: "/companion/v1/conversations/{conversation_id}/audio-messages"
+      post: "/companion/v1/audio-messages"
       body: "*"
     };
   }
+
+  rpc SendMediaMessage(SendMediaMessageRequest) returns (SendMediaMessageReply);
 
   rpc SubmitMemoryFeedback(MemoryFeedbackRequest) returns (MemoryFeedbackReply) {
     option (google.api.http) = {
-      post: "/companion/v1/conversations/{conversation_id}/memory-feedback"
+      post: "/companion/v1/memory-feedback"
       body: "*"
     };
   }
-
-  rpc CloseConversation(CloseConversationRequest) returns (ConversationReply) {
-    option (google.api.http) = {
-      post: "/companion/v1/conversations/{conversation_id}/close"
-      body: "*"
-    };
-  }
-
-  rpc ExportData(ExportDataRequest) returns (ExportDataReply) {
-    option (google.api.http) = {
-      post: "/companion/v1/data/export"
-      body: "*"
-    };
-  }
-
-  rpc DeleteData(DeleteDataRequest) returns (DeleteDataReply) {
-    option (google.api.http) = {
-      post: "/companion/v1/data/delete"
-      body: "*"
-    };
-  }
-}
-
-message Conversation {
-  string conversation_id = 1;
-  string user_id = 2;
-  string companion_id = 3;
-  string status = 4;
-  string summary = 5;
-  repeated ConversationMessage messages = 6;
-  string created_at = 7;
-  string updated_at = 8;
 }
 
 message ConversationMessage {
@@ -87,31 +44,29 @@ message ConversationMessage {
   string role = 2;
   string content = 3;
   string created_at = 4;
+  repeated MessageAsset assets = 5;
 }
 
-message CreateConversationRequest {
-  string companion_id = 1;
+message MessageAsset {
+  string message_asset_id = 1;
+  string asset_id = 2;
+  string media_type = 3;
+  string content_type = 4;
+  string filename = 5;
+  string url = 6;
+  int64 size_bytes = 7;
 }
 
-message GetConversationRequest {
-  string conversation_id = 1;
-}
-
-message ListConversationsRequest {
+message GetTimelineRequest {
   int32 limit = 1;
 }
 
+message TimelineReply {
+  repeated ConversationMessage messages = 1;
+}
+
 message SendMessageRequest {
-  string conversation_id = 1;
-  string content = 2;
-}
-
-message ConversationReply {
-  Conversation conversation = 1;
-}
-
-message ConversationListReply {
-  repeated Conversation conversations = 1;
+  string content = 1;
 }
 
 message SendMessageReply {
@@ -120,19 +75,32 @@ message SendMessageReply {
 }
 
 message SendAudioMessageRequest {
-  string conversation_id = 1;
-  bytes audio_data = 2;
-  string filename = 3;
-  string content_type = 4;
-  string language = 5;
-  string voice = 6;
-  bool synthesize = 7;
+  bytes audio_data = 1;
+  string filename = 2;
+  string content_type = 3;
+  string language = 4;
+  string voice = 5;
+  bool synthesize = 6;
 }
 
 message SendAudioMessageReply {
   SendMessageReply message = 1;
   bytes audio_data = 2;
   string audio_content_type = 3;
+}
+
+message SendMediaMessageRequest {
+  bytes data = 1;
+  string filename = 2;
+  string content_type = 3;
+  string media_type = 4;
+  string caption = 5;
+  bool synthesize = 6;
+  string voice = 7;
+}
+
+message SendMediaMessageReply {
+  SendMessageReply message = 1;
 }
 
 message MessageChunk {
@@ -143,40 +111,12 @@ message MessageChunk {
 }
 
 message MemoryFeedbackRequest {
-  string conversation_id = 1;
-  string message_id = 2;
-  string action = 3;
-  string kind = 4;
-  string content = 5;
+  string message_id = 1;
+  string action = 2;
+  string kind = 3;
+  string content = 4;
 }
 
 message MemoryFeedbackReply {
-  bool accepted = 1;
-}
-
-message CloseConversationRequest {
-  string conversation_id = 1;
-}
-
-message ExportDataRequest {}
-
-message ExportDataReply {
-  repeated Conversation conversations = 1;
-  repeated MemorySnapshot memories = 2;
-}
-
-message MemorySnapshot {
-  string memory_id = 1;
-  string layer = 2;
-  string kind = 3;
-  string content = 4;
-  string status = 5;
-  string created_at = 6;
-  string updated_at = 7;
-}
-
-message DeleteDataRequest {}
-
-message DeleteDataReply {
   bool accepted = 1;
 }

@@ -1,6 +1,10 @@
 package safety
 
-import "strings"
+import (
+	"strings"
+
+	"companion-service/internal/lexicon"
+)
 
 type Level string
 
@@ -9,12 +13,14 @@ const (
 	LevelCrisis Level = "crisis"
 )
 
-const crisisResponse = "我听到你现在可能正处在很危险、很难受的状态。请先立即联系身边可信任的人陪着你，并联系当地急救或危机干预热线；如果你已经有马上伤害自己的计划，请立刻拨打当地急救电话或前往最近的急诊室。"
-
 func Check(content string) Level {
+	return CheckForLocale(content, string(lexicon.DefaultLocale))
+}
+
+// CheckForLocale 使用指定语言目录识别危机表达。
+func CheckForLocale(content, locale string) Level {
 	lower := strings.ToLower(strings.TrimSpace(content))
-	markers := []string{"自杀", "轻生", "自残", "不想活", "结束生命", "伤害自己", "kill myself", "suicide", "suicidal", "self harm", "self-harm", "end my life"}
-	for _, marker := range markers {
+	for _, marker := range lexicon.ForLocale(locale).Safety.CrisisMarkers {
 		if strings.Contains(lower, marker) {
 			return LevelCrisis
 		}
@@ -23,8 +29,13 @@ func Check(content string) Level {
 }
 
 func Response(level Level) string {
+	return ResponseForLocale(level, string(lexicon.DefaultLocale))
+}
+
+// ResponseForLocale 返回指定语言的安全响应，缺失语言时回退默认词条。
+func ResponseForLocale(level Level, locale string) string {
 	if level == LevelCrisis {
-		return crisisResponse
+		return lexicon.ForLocale(locale).Safety.CrisisResponse
 	}
 	return ""
 }

@@ -24,6 +24,21 @@ type ModelGatewayClient struct {
 	apiKey  string
 }
 
+// ChatStream 是模型流式响应的最小边界，便于业务层隔离 gRPC 实现。
+type ChatStream interface {
+	Recv() (*modelv1.ChatCompletionChunk, error)
+	CloseSend() error
+}
+
+// ModelGateway 是 Companion 使用的模型能力边界。
+type ModelGateway interface {
+	Chat(context.Context, *modelv1.ChatCompletionRequest) (*modelv1.ChatCompletionReply, error)
+	ChatStream(context.Context, *modelv1.ChatCompletionRequest) (ChatStream, error)
+	Embed(context.Context, []string) (*modelv1.CreateEmbeddingReply, error)
+	TranscribeAudio(context.Context, *modelv1.TranscribeAudioRequest) (*modelv1.TranscribeAudioReply, error)
+	SynthesizeSpeech(context.Context, *modelv1.SynthesizeSpeechRequest) (*modelv1.SynthesizeSpeechReply, error)
+}
+
 func NewModelGatewayClient(c *conf.ModelGateway) (*ModelGatewayClient, func(), error) {
 	if c == nil || c.GrpcAddr == "" {
 		return nil, nil, fmt.Errorf("model gateway grpc_addr is required")
@@ -86,7 +101,7 @@ func (c *ModelGatewayClient) SynthesizeSpeech(ctx context.Context, req *modelv1.
 	return c.client.SynthesizeSpeech(callCtx, req)
 }
 
-func (c *ModelGatewayClient) ChatStream(ctx context.Context, req *modelv1.ChatCompletionRequest) (modelv1.ModelGateway_ChatCompletionStreamClient, error) {
+func (c *ModelGatewayClient) ChatStream(ctx context.Context, req *modelv1.ChatCompletionRequest) (ChatStream, error) {
 	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
 	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
 	request := proto.Clone(req).(*modelv1.ChatCompletionRequest)

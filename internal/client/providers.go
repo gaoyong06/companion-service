@@ -2,4 +2,4 @@ package client
 
 import "github.com/google/wire"
 
-var ProviderSet = wire.NewSet(NewModelGatewayClient)
+var ProviderSet = wire.NewSet(NewModelGatewayClient, NewAssetClient)

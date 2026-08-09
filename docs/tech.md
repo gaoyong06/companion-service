@@ -4,7 +4,7 @@
 > 文档版本：0.1  
 > 服务名称：`companion-service`  
 > 对应产品文档：`docs/design.md`  
-> 更新日期：2026-08-08
+> 更新日期：2026-08-09
 
 ## 1. 技术目标
 
@@ -34,8 +34,10 @@ API Layer
   ├── Conversation API
   ├── Memory API
   ├── Profile API
-  ├── Consent API
-  └── Data Export/Delete API
+  └── Consent API
+
+Operations Layer (internal only, separate authorization)
+  └── Data Governance Operations
 
 Application Layer
   ├── Conversation Orchestrator
@@ -70,7 +72,7 @@ Infrastructure Layer
 
 当前 0.1 实现边界如下：
 
-- `companion-service` 已实现创建会话、文本/音频消息、流式回复、语义记忆召回和数据治理。
+- `companion-service` 已实现服务端自动恢复上下文、文本/音频/图片/视频消息、流式回复、语义记忆召回和数据治理。媒体二进制由 `asset-service` 管理，本服务仅保存资产引用。
 - `model-gateway` 已实现 OpenAI-compatible Chat、Embedding、STT、TTS 和模型列表。
 - PostgreSQL + pgvector 持久化会话、消息、L1 记忆及其向量；生产记忆任务通过 RocketMQ，debug 配置可显式关闭队列使用进程内处理。
 - 供应商 API Key 只保留在 `model-gateway`，业务服务只持有内部网关 Key。
@@ -88,6 +90,27 @@ companion-service
 
 拆分前必须先证明独立扩缩容、独立权限或独立数据生命周期确实存在。
 
+### 3.3 词条与策略配置
+
+产品中的提示词、安全词、记忆控制词和固定回复属于可运营内容，不应散落在业务代码中。语言标签解析和 `Accept-Language` 匹配由 `internal/i18n` 统一负责；Companion 的 Prompt、安全策略和记忆控制词由 `internal/lexicon` 以类型化 Catalog 管理。第一版默认内置 `zh-CN` 与 `en-US`，服务离线时始终使用本地目录。
+
+两者职责不能混为一谈：普通用户界面文案属于 i18n 翻译；系统提示词是经过语义设计的 Prompt 版本，危机词和敏感词是需要人工审核的安全策略集合，不能交给通用翻译器自动生成。
+
+当前集中目录包括：
+
+- `prompt.companion.system`：陪伴系统提示词。
+- `prompt.companion.first_meeting`：首次见面提示词。
+- `prompt.companion.small_talk`：闲聊阶段提示词。
+- `prompt.companion.getting_to_know`：基于上一条回答追问一个点的提示词。
+- `prompt.companion.trust`：自然说明记忆边界的建立信任提示词。
+- `prompt.companion.established`：完成破冰后的自然陪伴提示词。
+- `prompt.conversation.summary`：会话摘要提示词。
+- `prompt.memory.extraction`：记忆抽取提示词。
+- `safety.crisis.response`、`safety.crisis.markers`：危机响应和识别词。
+- `memory.skip.markers`、`memory.sensitive.terms`：停止记忆和敏感信息词。
+
+后续由运营后台通过独立内部 gRPC 提供词条快照，建议接口具备 `locale`、`catalog_version`、发布状态、灰度范围和审计信息。`companion-service` 只接受已校验的完整快照，并保留上一个可用版本；拉取失败、版本不兼容或词条缺失时回退本地目录。模型 RPC、错误码、HTTP 路径、数据库字段和 `preference/fact/goal` 等领域枚举属于代码契约，不允许由运营词条覆盖。
+
 ## 4. 核心运行时流程
 
 ### 4.1 文本对话请求
@@ -96,10 +119,42 @@ companion-service
 2. Conversation Orchestrator 写入用户消息事件。
 3. Safety Policy 对当前输入做快速检查。
 4. Context Builder 读取最近消息、会话摘要、精简 Persona、关系状态和召回结果。
-5. Context Builder 始终注入 Companion system prompt：首次对话执行简短认识流程；后续对话遵循陪伴优先、默认短回复、单问题和不主动建议规则。
+5. Context Builder 始终注入 Companion system prompt，并依据服务端维护的破冰阶段选择一条运营词条：初见互报名字、闲聊探测状态、基于回答了解、自然说明记忆边界，最后进入自然陪伴。阶段只在模型成功生成并持久化回复后推进，不向客户端暴露。
 6. Model Gateway 发起模型请求；非流式和流式两种链路均可用，普通陪伴回复默认设置 `max_tokens=256`。
 7. 服务写入 Assistant 消息并返回完整回复，流式链路通过 SSE 或 gRPC 转发 token。
 8. 后续异步任务判断是否需要 L1 抽取、L2 场景聚合和 Persona 更新。
+
+请求的 `Accept-Language`（HTTP）或 `accept-language`（gRPC metadata）用于选择词条 locale；缺失时使用 `zh-CN` 默认目录。当前请求不把 locale 写入数据库，后续若需要固定用户语言，再由 Profile/Consent 领域显式保存。
+
+#### 4.1.1 自然破冰编排
+
+`Conversation Orchestrator` 从活动 `Conversation.onboarding_stage` 读取破冰阶段，`Context Builder` 将对应的运营词条与通用 Companion system prompt 合并后发送给 Model Gateway。阶段是服务端编排状态，不是模型输出，也不是客户端会话选择器。
+
+```text
+first_meeting
+  -> small_talk
+  -> getting_to_know
+  -> trust
+  -> established
+```
+
+阶段推进遵循以下事务顺序：
+
+1. 获取或创建用户与默认 Companion 的唯一活动上下文；新上下文默认为 `first_meeting`。
+2. 写入用户消息并执行安全检查；危机输入直接返回安全回复，不调用普通陪伴提示词，也不推进阶段。
+3. 按当前阶段、最近历史、摘要、相关记忆和当前输入构建模型请求。
+4. 模型返回非空回复后，先持久化 assistant message，再更新 `onboarding_stage`。
+5. 阶段更新成功后才发布记忆抽取任务；阶段更新失败不得伪造为已完成阶段。
+
+阶段词条的业务边界：
+
+- `first_meeting` 只负责固定自我介绍和轻量互报称呼，不解释记忆机制。
+- `small_talk` 只探测最近状态或正在做的事，一次最多一个问题。
+- `getting_to_know` 必须引用用户上一条回答中的具体点，避免泛化追问。
+- `trust` 只用一两句自然语言说明记忆范围、敏感信息边界和“不记住”意愿。
+- `established` 不重复破冰话术，回归普通陪伴规则。
+
+模型失败、空响应、流式中断、assistant message 未成功持久化以及危机拦截均保持原阶段。文本、流式、音频转写后的文本、图片和视频消息共用同一阶段，不创建新的用户可见会话。
 
 ### 4.2 语音请求
 
@@ -115,6 +170,20 @@ Audio Upload
 
 STT、LLM 和 TTS 均通过 Model Gateway 访问。业务模块不得直接依赖供应商 SDK。
 
+### 4.3 图片和视频请求
+
+```text
+Multipart Upload
+  -> asset-service.UploadFile
+  -> companion_message + companion_message_asset
+  -> Model Gateway ChatContentPart(image_url/video_url)
+  -> Companion Reply
+```
+
+图片和视频不把二进制写入 PostgreSQL。图片以 `image_url` 内容部件交给具备视觉能力的模型；视频以 `video_url` 内容部件交给具备视频能力的模型。DeepSeek 文本模型不支持视觉部件，收到媒体时网关返回供应商明确错误，运营配置需要切换到支持对应能力的模型。
+
+当前限制：单张图片 20 MiB，单个视频 100 MiB；视频关键帧、OCR、音频转写和摘要属于后续异步增强，不在请求线程内隐式执行。
+
 ## 5. 领域模型
 
 领域实体不使用含义不明确的裸字段 `id`。所有由 `companion-service` 生成和管理的标识，都使用 `<实体名>_id` 命名，并在服务内保持唯一；关联字段必须明确表达被关联的实体，例如 `conversation_id`、`message_id` 和 `memory_id`。
@@ -126,12 +195,13 @@ STT、LLM 和 TTS 均通过 Model Gateway 访问。业务模块不得直接依�
 ```text
 Conversation
 - conversation_id: 会话唯一标识，由 companion-service 生成，通常使用 conv_ 前缀。
-- user_id: 所属用户唯一标识，用于数据隔离、权限校验和用户级删除。
+- user_id: 所属用户唯一标识，用于数据隔离和权限校验。
 - companion_id: 陪伴角色唯一标识，当前默认值为 default。
-- status: 会话状态；当前使用 active 和 closed，未来可扩展 archived、deleting。
-- summary: 会话摘要；关闭会话时由模型生成，用于保留长期上下文和未解决事项。
-- created_at: 会话创建时间，使用 UTC 时间。
-- updated_at: 会话最后更新时间；新消息写入或会话关闭时更新。
+- status: 内部上下文段状态；当前使用 active 和 closed，由系统自动管理。
+- summary: 上下文段摘要；由系统在上下文预算达到阈值时生成，用于保留长期上下文和未解决事项。
+- onboarding_stage: 服务端维护的破冰阶段；当前使用 first_meeting、small_talk、getting_to_know、trust 和 established，不向客户端暴露。
+- created_at: 上下文段创建时间，使用 UTC 时间。
+- updated_at: 上下文段最后更新时间；新消息写入或系统分段时更新。
 ```
 
 以下字段属于后续扩展设计，当前未在 Go 模型和 SQL 中实现：
@@ -150,17 +220,18 @@ Conversation
 Message
 - message_id: 消息唯一标识，由 companion-service 生成，通常使用 msg_ 前缀。
 - conversation_id: 所属会话唯一标识，必须关联已存在的 Conversation。
-- user_id: 所属用户唯一标识；冗余保存以支持用户范围查询和删除。
+- user_id: 所属用户唯一标识；冗余保存以支持用户范围查询和数据治理。
 - role: 消息角色；user 表示用户消息，assistant 表示陪伴回复，system 仅用于模型上下文。
 - content: 消息正文，保存用户输入或模型生成的 UTF-8 文本。
 - created_at: 消息创建时间，使用 UTC 时间。
+- modality: 消息载体类型；当前使用 text、audio、image、video。
+- assets: 图片或视频的消息资产关联；原始二进制由 asset-service 管理。
 ```
 
 以下字段属于后续语音和可观测性设计，当前未在 Go 模型和 SQL 中实现：
 
 ```text
-- modality: 消息载体类型；计划支持 text、audio、transcription。
-- content_ref: 对象存储引用，用于保存原始音频或超长内容。
+- content_ref: 原始音频或超长内容的统一对象引用，当前未单独抽象；图片和视频使用 `companion_message_asset`。
 - content_hash: 内容完整性校验值，用于去重和审计。
 - token_count: 本条消息对应的模型 token 数量，用于成本和上下文统计。
 - safety_level: 消息安全等级，用于安全策略和审计。
@@ -253,7 +324,7 @@ TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机
 
 ### 6.2 当前数据库和建库入口
 
-- 当前只需要创建一个 PostgreSQL 数据库：`companion_service`，并启用 `vector` 扩展。
+- 当前只需要创建一个 PostgreSQL 数据库：`companion-service`，并启用 `vector` 扩展。数据库名称与服务名称保持一致；由于名称包含连字符，SQL 中创建和切换数据库时必须使用双引号。
 - `model-gateway` 不需要创建数据库。
 - 建库、连接参数和手动执行方式见 `docs/database.md`。
 - 当前 SQL 创建 `companion_conversation`、`companion_message` 和 `companion_memory` 三张表，其中记忆表包含 1536 维向量列和 HNSW 索引。
@@ -273,6 +344,7 @@ TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机
 ### 6.4 当前索引
 
 - `companion_conversation(user_id, created_at)`
+- `companion_conversation(user_id, companion_id) WHERE status = active` 唯一索引，保证同一用户和 Companion 只有一个当前活动上下文。
 - `companion_message(conversation_id, created_at)`
 - `companion_message(user_id, created_at)`
 - `companion_memory(user_id, status, importance, updated_at)`
@@ -317,14 +389,14 @@ CandidateExtractor 只能产生候选记忆。最终是否激活由 `ConsentGate
 
 ## 8. 上下文构建
 
-Context Builder 生成有限预算的 `PromptContext`：
+Context Builder 生成有限预算的 `PromptContext`，用户不需要感知内部会话分段：
 
 ```text
 PromptContext
 - system_policy
 - companion_persona
 - relationship_summary
-- current_conversation_summary
+- current_context_summary
 - recent_messages
 - recalled_memories
 - user_input
@@ -349,25 +421,20 @@ PromptContext
 
 ## 9. API 草案
 
-### 9.1 对话
+### 9.1 连续陪伴消息
 
 ```http
-POST /companion/v1/conversations
-GET  /companion/v1/conversations
-POST /companion/v1/conversations/{conversation_id}/messages
-POST /companion/v1/conversations/{conversation_id}/messages:stream
-GET  /companion/v1/conversations/{conversation_id}
-POST /companion/v1/conversations/{conversation_id}/close
+GET  /companion/v1/timeline
+POST /companion/v1/messages
+POST /companion/v1/messages:stream
+POST /companion/v1/audio-messages
 ```
 
 消息请求示例：
 
 ```json
 {
-  "client_message_id": "cmsg_01J...",
-  "modality": "text",
-  "content": "我今天有点累，只想聊一会儿",
-  "remember": "default"
+  "content": "我今天有点累，只想聊一会儿"
 }
 ```
 
@@ -386,14 +453,13 @@ message.failed
 ### 9.2 轻量记忆反馈
 
 ```http
-POST /companion/v1/conversations/{conversation_id}/memory-feedback
+POST /companion/v1/memory-feedback
 ```
 
 请求示例：
 
 ```json
 {
-  "conversation_id": "conv_01J...",
   "message_id": "msg_01J...",
   "action": "forget",
   "kind": "fact",
@@ -410,9 +476,9 @@ MVP 不向普通用户暴露按记忆 ID 浏览和修改的完整 CRUD。服务�
 ```http
 GET   /api/v1/consents
 PATCH /api/v1/consents
-POST  /companion/v1/data/export
-POST  /companion/v1/data/delete
 ```
+
+用户侧不提供数据导出和账号级删除 API。数据治理操作不属于 Companion 公共 gRPC/HTTP 契约；未来如确有运营需求，必须由独立运营系统通过内部接口调用，并使用独立的运营身份、授权、脱敏和审计策略。
 
 ### 9.4 错误契约
 
@@ -479,14 +545,13 @@ Provider Adapter 负责请求格式、重试、超时、计费信息和敏感字
 - `refresh_persona`
 - `generate_embedding`
 - `propagate_delete`
-- `generate_data_export`
 
 失败策略：
 
 1. 记忆任务失败不影响当前对话回复。
 2. 召回超时直接跳过，并记录英文告警日志。
 3. 模型超时返回可识别的降级错误，不伪造成功回复。
-4. 删除任务失败必须持续重试并告警。
+4. 运营发起的数据治理任务失败必须持续重试并告警。
 5. 所有任务使用指数退避和最大重试次数，超过后进入死信队列。
 
 ## 13. 可观测性
@@ -535,7 +600,7 @@ Provider Adapter 负责请求格式、重试、超时、计费信息和敏感字
 
 ### 15.3 评测集
 
-建立带来源的对话评测集，覆盖：
+建立至少 500 个带来源和期望结果的对话评测场景，具体数量、标签、阈值和 Go/No-Go 规则以 [ios-v1-quality.md](ios-v1-quality.md) 为准，覆盖：
 
 - 稳定偏好记忆。
 - 时间变化事实。

@@ -22,119 +22,20 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Conversation struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
-	UserId         string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	CompanionId    string                 `protobuf:"bytes,3,opt,name=companion_id,json=companionId,proto3" json:"companion_id,omitempty"`
-	Status         string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
-	Summary        string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
-	Messages       []*ConversationMessage `protobuf:"bytes,6,rep,name=messages,proto3" json:"messages,omitempty"`
-	CreatedAt      string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt      string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *Conversation) Reset() {
-	*x = Conversation{}
-	mi := &file_companion_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Conversation) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Conversation) ProtoMessage() {}
-
-func (x *Conversation) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Conversation.ProtoReflect.Descriptor instead.
-func (*Conversation) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Conversation) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
-}
-
-func (x *Conversation) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *Conversation) GetCompanionId() string {
-	if x != nil {
-		return x.CompanionId
-	}
-	return ""
-}
-
-func (x *Conversation) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *Conversation) GetSummary() string {
-	if x != nil {
-		return x.Summary
-	}
-	return ""
-}
-
-func (x *Conversation) GetMessages() []*ConversationMessage {
-	if x != nil {
-		return x.Messages
-	}
-	return nil
-}
-
-func (x *Conversation) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *Conversation) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
 type ConversationMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Assets        []*MessageAsset        `protobuf:"bytes,5,rep,name=assets,proto3" json:"assets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ConversationMessage) Reset() {
 	*x = ConversationMessage{}
-	mi := &file_companion_proto_msgTypes[1]
+	mi := &file_companion_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -146,7 +47,7 @@ func (x *ConversationMessage) String() string {
 func (*ConversationMessage) ProtoMessage() {}
 
 func (x *ConversationMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[1]
+	mi := &file_companion_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -159,7 +60,7 @@ func (x *ConversationMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConversationMessage.ProtoReflect.Descriptor instead.
 func (*ConversationMessage) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{1}
+	return file_companion_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ConversationMessage) GetMessageId() string {
@@ -190,72 +91,41 @@ func (x *ConversationMessage) GetCreatedAt() string {
 	return ""
 }
 
-type CreateConversationRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CompanionId   string                 `protobuf:"bytes,1,opt,name=companion_id,json=companionId,proto3" json:"companion_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateConversationRequest) Reset() {
-	*x = CreateConversationRequest{}
-	mi := &file_companion_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateConversationRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateConversationRequest) ProtoMessage() {}
-
-func (x *CreateConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[2]
+func (x *ConversationMessage) GetAssets() []*MessageAsset {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Assets
 	}
-	return mi.MessageOf(x)
+	return nil
 }
 
-// Deprecated: Use CreateConversationRequest.ProtoReflect.Descriptor instead.
-func (*CreateConversationRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *CreateConversationRequest) GetCompanionId() string {
-	if x != nil {
-		return x.CompanionId
-	}
-	return ""
-}
-
-type GetConversationRequest struct {
+type MessageAsset struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	MessageAssetId string                 `protobuf:"bytes,1,opt,name=message_asset_id,json=messageAssetId,proto3" json:"message_asset_id,omitempty"`
+	AssetId        string                 `protobuf:"bytes,2,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	MediaType      string                 `protobuf:"bytes,3,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
+	ContentType    string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Filename       string                 `protobuf:"bytes,5,opt,name=filename,proto3" json:"filename,omitempty"`
+	Url            string                 `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
+	SizeBytes      int64                  `protobuf:"varint,7,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *GetConversationRequest) Reset() {
-	*x = GetConversationRequest{}
-	mi := &file_companion_proto_msgTypes[3]
+func (x *MessageAsset) Reset() {
+	*x = MessageAsset{}
+	mi := &file_companion_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetConversationRequest) String() string {
+func (x *MessageAsset) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetConversationRequest) ProtoMessage() {}
+func (*MessageAsset) ProtoMessage() {}
 
-func (x *GetConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[3]
+func (x *MessageAsset) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -266,40 +136,82 @@ func (x *GetConversationRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetConversationRequest.ProtoReflect.Descriptor instead.
-func (*GetConversationRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use MessageAsset.ProtoReflect.Descriptor instead.
+func (*MessageAsset) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetConversationRequest) GetConversationId() string {
+func (x *MessageAsset) GetMessageAssetId() string {
 	if x != nil {
-		return x.ConversationId
+		return x.MessageAssetId
 	}
 	return ""
 }
 
-type ListConversationsRequest struct {
+func (x *MessageAsset) GetAssetId() string {
+	if x != nil {
+		return x.AssetId
+	}
+	return ""
+}
+
+func (x *MessageAsset) GetMediaType() string {
+	if x != nil {
+		return x.MediaType
+	}
+	return ""
+}
+
+func (x *MessageAsset) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *MessageAsset) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *MessageAsset) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *MessageAsset) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+type GetTimelineRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListConversationsRequest) Reset() {
-	*x = ListConversationsRequest{}
-	mi := &file_companion_proto_msgTypes[4]
+func (x *GetTimelineRequest) Reset() {
+	*x = GetTimelineRequest{}
+	mi := &file_companion_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListConversationsRequest) String() string {
+func (x *GetTimelineRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListConversationsRequest) ProtoMessage() {}
+func (*GetTimelineRequest) ProtoMessage() {}
 
-func (x *ListConversationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[4]
+func (x *GetTimelineRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,29 +222,72 @@ func (x *ListConversationsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListConversationsRequest.ProtoReflect.Descriptor instead.
-func (*ListConversationsRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetTimelineRequest.ProtoReflect.Descriptor instead.
+func (*GetTimelineRequest) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListConversationsRequest) GetLimit() int32 {
+func (x *GetTimelineRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
 	return 0
 }
 
+type TimelineReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Messages      []*ConversationMessage `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TimelineReply) Reset() {
+	*x = TimelineReply{}
+	mi := &file_companion_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimelineReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimelineReply) ProtoMessage() {}
+
+func (x *TimelineReply) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimelineReply.ProtoReflect.Descriptor instead.
+func (*TimelineReply) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TimelineReply) GetMessages() []*ConversationMessage {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
 type SendMessageRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
-	Content        string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SendMessageRequest) Reset() {
 	*x = SendMessageRequest{}
-	mi := &file_companion_proto_msgTypes[5]
+	mi := &file_companion_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -344,7 +299,7 @@ func (x *SendMessageRequest) String() string {
 func (*SendMessageRequest) ProtoMessage() {}
 
 func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[5]
+	mi := &file_companion_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -357,14 +312,7 @@ func (x *SendMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageRequest.ProtoReflect.Descriptor instead.
 func (*SendMessageRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SendMessageRequest) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
+	return file_companion_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SendMessageRequest) GetContent() string {
@@ -372,94 +320,6 @@ func (x *SendMessageRequest) GetContent() string {
 		return x.Content
 	}
 	return ""
-}
-
-type ConversationReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Conversation  *Conversation          `protobuf:"bytes,1,opt,name=conversation,proto3" json:"conversation,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ConversationReply) Reset() {
-	*x = ConversationReply{}
-	mi := &file_companion_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ConversationReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConversationReply) ProtoMessage() {}
-
-func (x *ConversationReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConversationReply.ProtoReflect.Descriptor instead.
-func (*ConversationReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *ConversationReply) GetConversation() *Conversation {
-	if x != nil {
-		return x.Conversation
-	}
-	return nil
-}
-
-type ConversationListReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Conversations []*Conversation        `protobuf:"bytes,1,rep,name=conversations,proto3" json:"conversations,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ConversationListReply) Reset() {
-	*x = ConversationListReply{}
-	mi := &file_companion_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ConversationListReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConversationListReply) ProtoMessage() {}
-
-func (x *ConversationListReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ConversationListReply.ProtoReflect.Descriptor instead.
-func (*ConversationListReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *ConversationListReply) GetConversations() []*Conversation {
-	if x != nil {
-		return x.Conversations
-	}
-	return nil
 }
 
 type SendMessageReply struct {
@@ -472,7 +332,7 @@ type SendMessageReply struct {
 
 func (x *SendMessageReply) Reset() {
 	*x = SendMessageReply{}
-	mi := &file_companion_proto_msgTypes[8]
+	mi := &file_companion_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +344,7 @@ func (x *SendMessageReply) String() string {
 func (*SendMessageReply) ProtoMessage() {}
 
 func (x *SendMessageReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[8]
+	mi := &file_companion_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +357,7 @@ func (x *SendMessageReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageReply.ProtoReflect.Descriptor instead.
 func (*SendMessageReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{8}
+	return file_companion_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SendMessageReply) GetUserMessage() *ConversationMessage {
@@ -515,21 +375,20 @@ func (x *SendMessageReply) GetAssistantMessage() *ConversationMessage {
 }
 
 type SendAudioMessageRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
-	AudioData      []byte                 `protobuf:"bytes,2,opt,name=audio_data,json=audioData,proto3" json:"audio_data,omitempty"`
-	Filename       string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
-	ContentType    string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Language       string                 `protobuf:"bytes,5,opt,name=language,proto3" json:"language,omitempty"`
-	Voice          string                 `protobuf:"bytes,6,opt,name=voice,proto3" json:"voice,omitempty"`
-	Synthesize     bool                   `protobuf:"varint,7,opt,name=synthesize,proto3" json:"synthesize,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AudioData     []byte                 `protobuf:"bytes,1,opt,name=audio_data,json=audioData,proto3" json:"audio_data,omitempty"`
+	Filename      string                 `protobuf:"bytes,2,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Language      string                 `protobuf:"bytes,4,opt,name=language,proto3" json:"language,omitempty"`
+	Voice         string                 `protobuf:"bytes,5,opt,name=voice,proto3" json:"voice,omitempty"`
+	Synthesize    bool                   `protobuf:"varint,6,opt,name=synthesize,proto3" json:"synthesize,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SendAudioMessageRequest) Reset() {
 	*x = SendAudioMessageRequest{}
-	mi := &file_companion_proto_msgTypes[9]
+	mi := &file_companion_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -541,7 +400,7 @@ func (x *SendAudioMessageRequest) String() string {
 func (*SendAudioMessageRequest) ProtoMessage() {}
 
 func (x *SendAudioMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[9]
+	mi := &file_companion_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,14 +413,7 @@ func (x *SendAudioMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendAudioMessageRequest.ProtoReflect.Descriptor instead.
 func (*SendAudioMessageRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *SendAudioMessageRequest) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
+	return file_companion_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SendAudioMessageRequest) GetAudioData() []byte {
@@ -617,7 +469,7 @@ type SendAudioMessageReply struct {
 
 func (x *SendAudioMessageReply) Reset() {
 	*x = SendAudioMessageReply{}
-	mi := &file_companion_proto_msgTypes[10]
+	mi := &file_companion_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -629,7 +481,7 @@ func (x *SendAudioMessageReply) String() string {
 func (*SendAudioMessageReply) ProtoMessage() {}
 
 func (x *SendAudioMessageReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[10]
+	mi := &file_companion_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -642,7 +494,7 @@ func (x *SendAudioMessageReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendAudioMessageReply.ProtoReflect.Descriptor instead.
 func (*SendAudioMessageReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{10}
+	return file_companion_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SendAudioMessageReply) GetMessage() *SendMessageReply {
@@ -666,6 +518,142 @@ func (x *SendAudioMessageReply) GetAudioContentType() string {
 	return ""
 }
 
+type SendMediaMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Filename      string                 `protobuf:"bytes,2,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	MediaType     string                 `protobuf:"bytes,4,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
+	Caption       string                 `protobuf:"bytes,5,opt,name=caption,proto3" json:"caption,omitempty"`
+	Synthesize    bool                   `protobuf:"varint,6,opt,name=synthesize,proto3" json:"synthesize,omitempty"`
+	Voice         string                 `protobuf:"bytes,7,opt,name=voice,proto3" json:"voice,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendMediaMessageRequest) Reset() {
+	*x = SendMediaMessageRequest{}
+	mi := &file_companion_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendMediaMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendMediaMessageRequest) ProtoMessage() {}
+
+func (x *SendMediaMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendMediaMessageRequest.ProtoReflect.Descriptor instead.
+func (*SendMediaMessageRequest) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SendMediaMessageRequest) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *SendMediaMessageRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *SendMediaMessageRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *SendMediaMessageRequest) GetMediaType() string {
+	if x != nil {
+		return x.MediaType
+	}
+	return ""
+}
+
+func (x *SendMediaMessageRequest) GetCaption() string {
+	if x != nil {
+		return x.Caption
+	}
+	return ""
+}
+
+func (x *SendMediaMessageRequest) GetSynthesize() bool {
+	if x != nil {
+		return x.Synthesize
+	}
+	return false
+}
+
+func (x *SendMediaMessageRequest) GetVoice() string {
+	if x != nil {
+		return x.Voice
+	}
+	return ""
+}
+
+type SendMediaMessageReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *SendMessageReply      `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendMediaMessageReply) Reset() {
+	*x = SendMediaMessageReply{}
+	mi := &file_companion_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendMediaMessageReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendMediaMessageReply) ProtoMessage() {}
+
+func (x *SendMediaMessageReply) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendMediaMessageReply.ProtoReflect.Descriptor instead.
+func (*SendMediaMessageReply) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SendMediaMessageReply) GetMessage() *SendMessageReply {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
 type MessageChunk struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
@@ -678,7 +666,7 @@ type MessageChunk struct {
 
 func (x *MessageChunk) Reset() {
 	*x = MessageChunk{}
-	mi := &file_companion_proto_msgTypes[11]
+	mi := &file_companion_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -690,7 +678,7 @@ func (x *MessageChunk) String() string {
 func (*MessageChunk) ProtoMessage() {}
 
 func (x *MessageChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[11]
+	mi := &file_companion_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +691,7 @@ func (x *MessageChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageChunk.ProtoReflect.Descriptor instead.
 func (*MessageChunk) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{11}
+	return file_companion_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MessageChunk) GetMessageId() string {
@@ -735,19 +723,18 @@ func (x *MessageChunk) GetDone() bool {
 }
 
 type MemoryFeedbackRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
-	MessageId      string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
-	Action         string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
-	Kind           string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	Content        string                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Action        string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MemoryFeedbackRequest) Reset() {
 	*x = MemoryFeedbackRequest{}
-	mi := &file_companion_proto_msgTypes[12]
+	mi := &file_companion_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -759,7 +746,7 @@ func (x *MemoryFeedbackRequest) String() string {
 func (*MemoryFeedbackRequest) ProtoMessage() {}
 
 func (x *MemoryFeedbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[12]
+	mi := &file_companion_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -772,14 +759,7 @@ func (x *MemoryFeedbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryFeedbackRequest.ProtoReflect.Descriptor instead.
 func (*MemoryFeedbackRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *MemoryFeedbackRequest) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
+	return file_companion_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MemoryFeedbackRequest) GetMessageId() string {
@@ -819,7 +799,7 @@ type MemoryFeedbackReply struct {
 
 func (x *MemoryFeedbackReply) Reset() {
 	*x = MemoryFeedbackReply{}
-	mi := &file_companion_proto_msgTypes[13]
+	mi := &file_companion_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -831,7 +811,7 @@ func (x *MemoryFeedbackReply) String() string {
 func (*MemoryFeedbackReply) ProtoMessage() {}
 
 func (x *MemoryFeedbackReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[13]
+	mi := &file_companion_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -844,314 +824,10 @@ func (x *MemoryFeedbackReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryFeedbackReply.ProtoReflect.Descriptor instead.
 func (*MemoryFeedbackReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{13}
+	return file_companion_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MemoryFeedbackReply) GetAccepted() bool {
-	if x != nil {
-		return x.Accepted
-	}
-	return false
-}
-
-type CloseConversationRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *CloseConversationRequest) Reset() {
-	*x = CloseConversationRequest{}
-	mi := &file_companion_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CloseConversationRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CloseConversationRequest) ProtoMessage() {}
-
-func (x *CloseConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CloseConversationRequest.ProtoReflect.Descriptor instead.
-func (*CloseConversationRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *CloseConversationRequest) GetConversationId() string {
-	if x != nil {
-		return x.ConversationId
-	}
-	return ""
-}
-
-type ExportDataRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ExportDataRequest) Reset() {
-	*x = ExportDataRequest{}
-	mi := &file_companion_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ExportDataRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ExportDataRequest) ProtoMessage() {}
-
-func (x *ExportDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ExportDataRequest.ProtoReflect.Descriptor instead.
-func (*ExportDataRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{15}
-}
-
-type ExportDataReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Conversations []*Conversation        `protobuf:"bytes,1,rep,name=conversations,proto3" json:"conversations,omitempty"`
-	Memories      []*MemorySnapshot      `protobuf:"bytes,2,rep,name=memories,proto3" json:"memories,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ExportDataReply) Reset() {
-	*x = ExportDataReply{}
-	mi := &file_companion_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ExportDataReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ExportDataReply) ProtoMessage() {}
-
-func (x *ExportDataReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ExportDataReply.ProtoReflect.Descriptor instead.
-func (*ExportDataReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *ExportDataReply) GetConversations() []*Conversation {
-	if x != nil {
-		return x.Conversations
-	}
-	return nil
-}
-
-func (x *ExportDataReply) GetMemories() []*MemorySnapshot {
-	if x != nil {
-		return x.Memories
-	}
-	return nil
-}
-
-type MemorySnapshot struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MemoryId      string                 `protobuf:"bytes,1,opt,name=memory_id,json=memoryId,proto3" json:"memory_id,omitempty"`
-	Layer         string                 `protobuf:"bytes,2,opt,name=layer,proto3" json:"layer,omitempty"`
-	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
-	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
-	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MemorySnapshot) Reset() {
-	*x = MemorySnapshot{}
-	mi := &file_companion_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MemorySnapshot) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemorySnapshot) ProtoMessage() {}
-
-func (x *MemorySnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemorySnapshot.ProtoReflect.Descriptor instead.
-func (*MemorySnapshot) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *MemorySnapshot) GetMemoryId() string {
-	if x != nil {
-		return x.MemoryId
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetLayer() string {
-	if x != nil {
-		return x.Layer
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *MemorySnapshot) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
-type DeleteDataRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteDataRequest) Reset() {
-	*x = DeleteDataRequest{}
-	mi := &file_companion_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteDataRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteDataRequest) ProtoMessage() {}
-
-func (x *DeleteDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteDataRequest.ProtoReflect.Descriptor instead.
-func (*DeleteDataRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{18}
-}
-
-type DeleteDataReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteDataReply) Reset() {
-	*x = DeleteDataReply{}
-	mi := &file_companion_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteDataReply) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteDataReply) ProtoMessage() {}
-
-func (x *DeleteDataReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteDataReply.ProtoReflect.Descriptor instead.
-func (*DeleteDataReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{19}
-}
-
-func (x *DeleteDataReply) GetAccepted() bool {
 	if x != nil {
 		return x.Accepted
 	}
@@ -1162,105 +838,83 @@ var File_companion_proto protoreflect.FileDescriptor
 
 const file_companion_proto_rawDesc = "" +
 	"\n" +
-	"\x0fcompanion.proto\x12\fcompanion.v1\x1a\x1cgoogle/api/annotations.proto\"\xa2\x02\n" +
-	"\fConversation\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
-	"\fcompanion_id\x18\x03 \x01(\tR\vcompanionId\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\x12\x18\n" +
-	"\asummary\x18\x05 \x01(\tR\asummary\x12=\n" +
-	"\bmessages\x18\x06 \x03(\v2!.companion.v1.ConversationMessageR\bmessages\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
-	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt\"\x81\x01\n" +
+	"\x0fcompanion.proto\x12\fcompanion.v1\x1a\x1cgoogle/api/annotations.proto\"\xb5\x01\n" +
 	"\x13ConversationMessage\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\">\n" +
-	"\x19CreateConversationRequest\x12!\n" +
-	"\fcompanion_id\x18\x01 \x01(\tR\vcompanionId\"A\n" +
-	"\x16GetConversationRequest\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\"0\n" +
-	"\x18ListConversationsRequest\x12\x14\n" +
-	"\x05limit\x18\x01 \x01(\x05R\x05limit\"W\n" +
-	"\x12SendMessageRequest\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"S\n" +
-	"\x11ConversationReply\x12>\n" +
-	"\fconversation\x18\x01 \x01(\v2\x1a.companion.v1.ConversationR\fconversation\"Y\n" +
-	"\x15ConversationListReply\x12@\n" +
-	"\rconversations\x18\x01 \x03(\v2\x1a.companion.v1.ConversationR\rconversations\"\xa8\x01\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\x122\n" +
+	"\x06assets\x18\x05 \x03(\v2\x1a.companion.v1.MessageAssetR\x06assets\"\xe2\x01\n" +
+	"\fMessageAsset\x12(\n" +
+	"\x10message_asset_id\x18\x01 \x01(\tR\x0emessageAssetId\x12\x19\n" +
+	"\basset_id\x18\x02 \x01(\tR\aassetId\x12\x1d\n" +
+	"\n" +
+	"media_type\x18\x03 \x01(\tR\tmediaType\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x1a\n" +
+	"\bfilename\x18\x05 \x01(\tR\bfilename\x12\x10\n" +
+	"\x03url\x18\x06 \x01(\tR\x03url\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\a \x01(\x03R\tsizeBytes\"*\n" +
+	"\x12GetTimelineRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\"N\n" +
+	"\rTimelineReply\x12=\n" +
+	"\bmessages\x18\x01 \x03(\v2!.companion.v1.ConversationMessageR\bmessages\".\n" +
+	"\x12SendMessageRequest\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\tR\acontent\"\xa8\x01\n" +
 	"\x10SendMessageReply\x12D\n" +
 	"\fuser_message\x18\x01 \x01(\v2!.companion.v1.ConversationMessageR\vuserMessage\x12N\n" +
-	"\x11assistant_message\x18\x02 \x01(\v2!.companion.v1.ConversationMessageR\x10assistantMessage\"\xf2\x01\n" +
-	"\x17SendAudioMessageRequest\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
+	"\x11assistant_message\x18\x02 \x01(\v2!.companion.v1.ConversationMessageR\x10assistantMessage\"\xc9\x01\n" +
+	"\x17SendAudioMessageRequest\x12\x1d\n" +
 	"\n" +
-	"audio_data\x18\x02 \x01(\fR\taudioData\x12\x1a\n" +
-	"\bfilename\x18\x03 \x01(\tR\bfilename\x12!\n" +
-	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x1a\n" +
-	"\blanguage\x18\x05 \x01(\tR\blanguage\x12\x14\n" +
-	"\x05voice\x18\x06 \x01(\tR\x05voice\x12\x1e\n" +
+	"audio_data\x18\x01 \x01(\fR\taudioData\x12\x1a\n" +
+	"\bfilename\x18\x02 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x1a\n" +
+	"\blanguage\x18\x04 \x01(\tR\blanguage\x12\x14\n" +
+	"\x05voice\x18\x05 \x01(\tR\x05voice\x12\x1e\n" +
 	"\n" +
-	"synthesize\x18\a \x01(\bR\n" +
+	"synthesize\x18\x06 \x01(\bR\n" +
 	"synthesize\"\x9e\x01\n" +
 	"\x15SendAudioMessageReply\x128\n" +
 	"\amessage\x18\x01 \x01(\v2\x1e.companion.v1.SendMessageReplyR\amessage\x12\x1d\n" +
 	"\n" +
 	"audio_data\x18\x02 \x01(\fR\taudioData\x12,\n" +
-	"\x12audio_content_type\x18\x03 \x01(\tR\x10audioContentType\"|\n" +
+	"\x12audio_content_type\x18\x03 \x01(\tR\x10audioContentType\"\xdb\x01\n" +
+	"\x17SendMediaMessageRequest\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12\x1a\n" +
+	"\bfilename\x18\x02 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"media_type\x18\x04 \x01(\tR\tmediaType\x12\x18\n" +
+	"\acaption\x18\x05 \x01(\tR\acaption\x12\x1e\n" +
+	"\n" +
+	"synthesize\x18\x06 \x01(\bR\n" +
+	"synthesize\x12\x14\n" +
+	"\x05voice\x18\a \x01(\tR\x05voice\"Q\n" +
+	"\x15SendMediaMessageReply\x128\n" +
+	"\amessage\x18\x01 \x01(\v2\x1e.companion.v1.SendMessageReplyR\amessage\"|\n" +
 	"\fMessageChunk\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
 	"\x05delta\x18\x02 \x01(\tR\x05delta\x12#\n" +
 	"\rfinish_reason\x18\x03 \x01(\tR\ffinishReason\x12\x12\n" +
-	"\x04done\x18\x04 \x01(\bR\x04done\"\xa5\x01\n" +
-	"\x15MemoryFeedbackRequest\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
+	"\x04done\x18\x04 \x01(\bR\x04done\"|\n" +
+	"\x15MemoryFeedbackRequest\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x02 \x01(\tR\tmessageId\x12\x16\n" +
-	"\x06action\x18\x03 \x01(\tR\x06action\x12\x12\n" +
-	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x18\n" +
-	"\acontent\x18\x05 \x01(\tR\acontent\"1\n" +
-	"\x13MemoryFeedbackReply\x12\x1a\n" +
-	"\baccepted\x18\x01 \x01(\bR\baccepted\"C\n" +
-	"\x18CloseConversationRequest\x12'\n" +
-	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\"\x13\n" +
-	"\x11ExportDataRequest\"\x8d\x01\n" +
-	"\x0fExportDataReply\x12@\n" +
-	"\rconversations\x18\x01 \x03(\v2\x1a.companion.v1.ConversationR\rconversations\x128\n" +
-	"\bmemories\x18\x02 \x03(\v2\x1c.companion.v1.MemorySnapshotR\bmemories\"\xc7\x01\n" +
-	"\x0eMemorySnapshot\x12\x1b\n" +
-	"\tmemory_id\x18\x01 \x01(\tR\bmemoryId\x12\x14\n" +
-	"\x05layer\x18\x02 \x01(\tR\x05layer\x12\x12\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\tR\x06action\x12\x12\n" +
 	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
-	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt\"\x13\n" +
-	"\x11DeleteDataRequest\"-\n" +
-	"\x0fDeleteDataReply\x12\x1a\n" +
-	"\baccepted\x18\x01 \x01(\bR\baccepted2\xf4\n" +
-	"\n" +
-	"\tCompanion\x12\x86\x01\n" +
-	"\x12CreateConversation\x12'.companion.v1.CreateConversationRequest\x1a\x1f.companion.v1.ConversationReply\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/companion/v1/conversations\x12\x8f\x01\n" +
-	"\x0fGetConversation\x12$.companion.v1.GetConversationRequest\x1a\x1f.companion.v1.ConversationReply\"5\x82\xd3\xe4\x93\x02/\x12-/companion/v1/conversations/{conversation_id}\x12\x85\x01\n" +
-	"\x11ListConversations\x12&.companion.v1.ListConversationsRequest\x1a#.companion.v1.ConversationListReply\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/companion/v1/conversations\x12\x92\x01\n" +
-	"\vSendMessage\x12 .companion.v1.SendMessageRequest\x1a\x1e.companion.v1.SendMessageReply\"A\x82\xd3\xe4\x93\x02;:\x01*\"6/companion/v1/conversations/{conversation_id}/messages\x12S\n" +
-	"\x11SendMessageStream\x12 .companion.v1.SendMessageRequest\x1a\x1a.companion.v1.MessageChunk0\x01\x12\xa7\x01\n" +
-	"\x10SendAudioMessage\x12%.companion.v1.SendAudioMessageRequest\x1a#.companion.v1.SendAudioMessageReply\"G\x82\xd3\xe4\x93\x02A:\x01*\"</companion/v1/conversations/{conversation_id}/audio-messages\x12\xa8\x01\n" +
-	"\x14SubmitMemoryFeedback\x12#.companion.v1.MemoryFeedbackRequest\x1a!.companion.v1.MemoryFeedbackReply\"H\x82\xd3\xe4\x93\x02B:\x01*\"=/companion/v1/conversations/{conversation_id}/memory-feedback\x12\x9c\x01\n" +
-	"\x11CloseConversation\x12&.companion.v1.CloseConversationRequest\x1a\x1f.companion.v1.ConversationReply\">\x82\xd3\xe4\x93\x028:\x01*\"3/companion/v1/conversations/{conversation_id}/close\x12r\n" +
-	"\n" +
-	"ExportData\x12\x1f.companion.v1.ExportDataRequest\x1a\x1d.companion.v1.ExportDataReply\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/companion/v1/data/export\x12r\n" +
-	"\n" +
-	"DeleteData\x12\x1f.companion.v1.DeleteDataRequest\x1a\x1d.companion.v1.DeleteDataReply\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/companion/v1/data/deleteB'Z%companion-service/api/companion/v1;v1b\x06proto3"
+	"\acontent\x18\x04 \x01(\tR\acontent\"1\n" +
+	"\x13MemoryFeedbackReply\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted2\xb7\x05\n" +
+	"\tCompanion\x12l\n" +
+	"\vGetTimeline\x12 .companion.v1.GetTimelineRequest\x1a\x1b.companion.v1.TimelineReply\"\x1e\x82\xd3\xe4\x93\x02\x18\x12\x16/companion/v1/timeline\x12r\n" +
+	"\vSendMessage\x12 .companion.v1.SendMessageRequest\x1a\x1e.companion.v1.SendMessageReply\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/companion/v1/messages\x12S\n" +
+	"\x11SendMessageStream\x12 .companion.v1.SendMessageRequest\x1a\x1a.companion.v1.MessageChunk0\x01\x12\x87\x01\n" +
+	"\x10SendAudioMessage\x12%.companion.v1.SendAudioMessageRequest\x1a#.companion.v1.SendAudioMessageReply\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/companion/v1/audio-messages\x12^\n" +
+	"\x10SendMediaMessage\x12%.companion.v1.SendMediaMessageRequest\x1a#.companion.v1.SendMediaMessageReply\x12\x88\x01\n" +
+	"\x14SubmitMemoryFeedback\x12#.companion.v1.MemoryFeedbackRequest\x1a!.companion.v1.MemoryFeedbackReply\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/companion/v1/memory-feedbackB'Z%companion-service/api/companion/v1;v1b\x06proto3"
 
 var (
 	file_companion_proto_rawDescOnce sync.Once
@@ -1274,63 +928,46 @@ func file_companion_proto_rawDescGZIP() []byte {
 	return file_companion_proto_rawDescData
 }
 
-var file_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_companion_proto_goTypes = []any{
-	(*Conversation)(nil),              // 0: companion.v1.Conversation
-	(*ConversationMessage)(nil),       // 1: companion.v1.ConversationMessage
-	(*CreateConversationRequest)(nil), // 2: companion.v1.CreateConversationRequest
-	(*GetConversationRequest)(nil),    // 3: companion.v1.GetConversationRequest
-	(*ListConversationsRequest)(nil),  // 4: companion.v1.ListConversationsRequest
-	(*SendMessageRequest)(nil),        // 5: companion.v1.SendMessageRequest
-	(*ConversationReply)(nil),         // 6: companion.v1.ConversationReply
-	(*ConversationListReply)(nil),     // 7: companion.v1.ConversationListReply
-	(*SendMessageReply)(nil),          // 8: companion.v1.SendMessageReply
-	(*SendAudioMessageRequest)(nil),   // 9: companion.v1.SendAudioMessageRequest
-	(*SendAudioMessageReply)(nil),     // 10: companion.v1.SendAudioMessageReply
-	(*MessageChunk)(nil),              // 11: companion.v1.MessageChunk
-	(*MemoryFeedbackRequest)(nil),     // 12: companion.v1.MemoryFeedbackRequest
-	(*MemoryFeedbackReply)(nil),       // 13: companion.v1.MemoryFeedbackReply
-	(*CloseConversationRequest)(nil),  // 14: companion.v1.CloseConversationRequest
-	(*ExportDataRequest)(nil),         // 15: companion.v1.ExportDataRequest
-	(*ExportDataReply)(nil),           // 16: companion.v1.ExportDataReply
-	(*MemorySnapshot)(nil),            // 17: companion.v1.MemorySnapshot
-	(*DeleteDataRequest)(nil),         // 18: companion.v1.DeleteDataRequest
-	(*DeleteDataReply)(nil),           // 19: companion.v1.DeleteDataReply
+	(*ConversationMessage)(nil),     // 0: companion.v1.ConversationMessage
+	(*MessageAsset)(nil),            // 1: companion.v1.MessageAsset
+	(*GetTimelineRequest)(nil),      // 2: companion.v1.GetTimelineRequest
+	(*TimelineReply)(nil),           // 3: companion.v1.TimelineReply
+	(*SendMessageRequest)(nil),      // 4: companion.v1.SendMessageRequest
+	(*SendMessageReply)(nil),        // 5: companion.v1.SendMessageReply
+	(*SendAudioMessageRequest)(nil), // 6: companion.v1.SendAudioMessageRequest
+	(*SendAudioMessageReply)(nil),   // 7: companion.v1.SendAudioMessageReply
+	(*SendMediaMessageRequest)(nil), // 8: companion.v1.SendMediaMessageRequest
+	(*SendMediaMessageReply)(nil),   // 9: companion.v1.SendMediaMessageReply
+	(*MessageChunk)(nil),            // 10: companion.v1.MessageChunk
+	(*MemoryFeedbackRequest)(nil),   // 11: companion.v1.MemoryFeedbackRequest
+	(*MemoryFeedbackReply)(nil),     // 12: companion.v1.MemoryFeedbackReply
 }
 var file_companion_proto_depIdxs = []int32{
-	1,  // 0: companion.v1.Conversation.messages:type_name -> companion.v1.ConversationMessage
-	0,  // 1: companion.v1.ConversationReply.conversation:type_name -> companion.v1.Conversation
-	0,  // 2: companion.v1.ConversationListReply.conversations:type_name -> companion.v1.Conversation
-	1,  // 3: companion.v1.SendMessageReply.user_message:type_name -> companion.v1.ConversationMessage
-	1,  // 4: companion.v1.SendMessageReply.assistant_message:type_name -> companion.v1.ConversationMessage
-	8,  // 5: companion.v1.SendAudioMessageReply.message:type_name -> companion.v1.SendMessageReply
-	0,  // 6: companion.v1.ExportDataReply.conversations:type_name -> companion.v1.Conversation
-	17, // 7: companion.v1.ExportDataReply.memories:type_name -> companion.v1.MemorySnapshot
-	2,  // 8: companion.v1.Companion.CreateConversation:input_type -> companion.v1.CreateConversationRequest
-	3,  // 9: companion.v1.Companion.GetConversation:input_type -> companion.v1.GetConversationRequest
-	4,  // 10: companion.v1.Companion.ListConversations:input_type -> companion.v1.ListConversationsRequest
-	5,  // 11: companion.v1.Companion.SendMessage:input_type -> companion.v1.SendMessageRequest
-	5,  // 12: companion.v1.Companion.SendMessageStream:input_type -> companion.v1.SendMessageRequest
-	9,  // 13: companion.v1.Companion.SendAudioMessage:input_type -> companion.v1.SendAudioMessageRequest
-	12, // 14: companion.v1.Companion.SubmitMemoryFeedback:input_type -> companion.v1.MemoryFeedbackRequest
-	14, // 15: companion.v1.Companion.CloseConversation:input_type -> companion.v1.CloseConversationRequest
-	15, // 16: companion.v1.Companion.ExportData:input_type -> companion.v1.ExportDataRequest
-	18, // 17: companion.v1.Companion.DeleteData:input_type -> companion.v1.DeleteDataRequest
-	6,  // 18: companion.v1.Companion.CreateConversation:output_type -> companion.v1.ConversationReply
-	6,  // 19: companion.v1.Companion.GetConversation:output_type -> companion.v1.ConversationReply
-	7,  // 20: companion.v1.Companion.ListConversations:output_type -> companion.v1.ConversationListReply
-	8,  // 21: companion.v1.Companion.SendMessage:output_type -> companion.v1.SendMessageReply
-	11, // 22: companion.v1.Companion.SendMessageStream:output_type -> companion.v1.MessageChunk
-	10, // 23: companion.v1.Companion.SendAudioMessage:output_type -> companion.v1.SendAudioMessageReply
-	13, // 24: companion.v1.Companion.SubmitMemoryFeedback:output_type -> companion.v1.MemoryFeedbackReply
-	6,  // 25: companion.v1.Companion.CloseConversation:output_type -> companion.v1.ConversationReply
-	16, // 26: companion.v1.Companion.ExportData:output_type -> companion.v1.ExportDataReply
-	19, // 27: companion.v1.Companion.DeleteData:output_type -> companion.v1.DeleteDataReply
-	18, // [18:28] is the sub-list for method output_type
-	8,  // [8:18] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 0: companion.v1.ConversationMessage.assets:type_name -> companion.v1.MessageAsset
+	0,  // 1: companion.v1.TimelineReply.messages:type_name -> companion.v1.ConversationMessage
+	0,  // 2: companion.v1.SendMessageReply.user_message:type_name -> companion.v1.ConversationMessage
+	0,  // 3: companion.v1.SendMessageReply.assistant_message:type_name -> companion.v1.ConversationMessage
+	5,  // 4: companion.v1.SendAudioMessageReply.message:type_name -> companion.v1.SendMessageReply
+	5,  // 5: companion.v1.SendMediaMessageReply.message:type_name -> companion.v1.SendMessageReply
+	2,  // 6: companion.v1.Companion.GetTimeline:input_type -> companion.v1.GetTimelineRequest
+	4,  // 7: companion.v1.Companion.SendMessage:input_type -> companion.v1.SendMessageRequest
+	4,  // 8: companion.v1.Companion.SendMessageStream:input_type -> companion.v1.SendMessageRequest
+	6,  // 9: companion.v1.Companion.SendAudioMessage:input_type -> companion.v1.SendAudioMessageRequest
+	8,  // 10: companion.v1.Companion.SendMediaMessage:input_type -> companion.v1.SendMediaMessageRequest
+	11, // 11: companion.v1.Companion.SubmitMemoryFeedback:input_type -> companion.v1.MemoryFeedbackRequest
+	3,  // 12: companion.v1.Companion.GetTimeline:output_type -> companion.v1.TimelineReply
+	5,  // 13: companion.v1.Companion.SendMessage:output_type -> companion.v1.SendMessageReply
+	10, // 14: companion.v1.Companion.SendMessageStream:output_type -> companion.v1.MessageChunk
+	7,  // 15: companion.v1.Companion.SendAudioMessage:output_type -> companion.v1.SendAudioMessageReply
+	9,  // 16: companion.v1.Companion.SendMediaMessage:output_type -> companion.v1.SendMediaMessageReply
+	12, // 17: companion.v1.Companion.SubmitMemoryFeedback:output_type -> companion.v1.MemoryFeedbackReply
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_companion_proto_init() }
@@ -1344,7 +981,7 @@ func file_companion_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_companion_proto_rawDesc), len(file_companion_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

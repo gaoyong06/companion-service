@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	v1 "companion-service/api/companion/v1"
 	"companion-service/internal/conf"
@@ -34,15 +36,38 @@ func NewHTTPServer(c *conf.HTTP, s *service.CompanionService) *kratoshttp.Server
 	}
 	srv := kratoshttp.NewServer(opts...)
 	v1.RegisterCompanionHTTPServer(srv, s)
-	srv.Route("/").POST("/companion/v1/conversations/{conversation_id}/messages:stream", func(ctx kratoshttp.Context) error {
+	srv.Route("/").POST("/companion/v1/media-messages", func(ctx kratoshttp.Context) error {
+		request := ctx.Request()
+		request.Body = http.MaxBytesReader(ctx.Response(), request.Body, 100*1024*1024+1)
+		if err := request.ParseMultipartForm(100 << 20); err != nil {
+			return fmt.Errorf("parse media upload: %w", err)
+		}
+		file, header, err := request.FormFile("file")
+		if err != nil {
+			return fmt.Errorf("media file is required: %w", err)
+		}
+		defer file.Close()
+		data, err := io.ReadAll(file)
+		if err != nil {
+			return fmt.Errorf("read media file: %w", err)
+		}
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = http.DetectContentType(data)
+		}
+		mediaType := strings.SplitN(contentType, "/", 2)[0]
+		result, err := s.SendMediaMessage(ctx, &v1.SendMediaMessageRequest{Data: data, Filename: header.Filename, ContentType: contentType, MediaType: mediaType, Caption: request.FormValue("caption"), Synthesize: request.FormValue("synthesize") == "true", Voice: request.FormValue("voice")})
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, result)
+	})
+	srv.Route("/").POST("/companion/v1/messages:stream", func(ctx kratoshttp.Context) error {
 		var request v1.SendMessageRequest
 		if err := ctx.Bind(&request); err != nil {
 			return err
 		}
 		if err := ctx.BindQuery(&request); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&request); err != nil {
 			return err
 		}
 		httpContext := ctx

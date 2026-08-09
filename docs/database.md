@@ -10,7 +10,9 @@
 | `companion-service` | PostgreSQL 15+ + pgvector | 会话、消息、L1 记忆和向量召回 | 是 |
 | `model-gateway` | 无 | 无状态转发 Chat、Embedding 和模型列表请求 | 否 |
 
-当前版本使用 PostgreSQL + pgvector；生产环境的记忆任务还依赖 RocketMQ。Redis 和对象存储仍未作为启动前置条件。
+当前版本使用 PostgreSQL + pgvector；生产环境的记忆任务还依赖 RocketMQ。媒体原始文件由 `asset-service` 的 OSS 后端保存，不需要 MySQL、Redis 或单独的向量数据库。
+
+媒体上传依赖 `asset-service` gRPC（本机默认 `127.0.0.1:9104`），其 OSS/本地存储配置由 `asset-service` 自身维护；`companion-service` 不创建或迁移资产服务的数据库。
 
 ## 2. companion-service
 
@@ -19,13 +21,15 @@
 Debug 配置默认连接：
 
 ```text
-postgres://postgres:postgres@127.0.0.1:5432/companion_service?sslmode=disable
+postgres://gaoyong@127.0.0.1:5432/companion-service?sslmode=disable
 ```
+
+本机 PostgreSQL 默认使用当前 macOS 用户 `gaoyong` 连接，不假设存在 `postgres` 超级用户，也不在 DSN 中写入密码。若本机实例启用了密码认证，请通过 `COMPANION_DATABASE_DSN` 覆盖该连接串，不要把密码提交到配置文件。
 
 Release 配置从环境变量 `COMPANION_DATABASE_DSN` 读取完整 DSN，例如：
 
 ```bash
-export COMPANION_DATABASE_DSN='postgres://companion_app:strong-password@postgres:5432/companion_service?sslmode=require'
+export COMPANION_DATABASE_DSN='postgres://companion_app:strong-password@postgres:5432/companion-service?sslmode=require'
 ```
 
 连接使用 GORM PostgreSQL 驱动，代码入口为 `internal/data/conversation.go`。服务启动时不会自动创建数据库，也不会自动迁移表结构。
@@ -35,8 +39,8 @@ export COMPANION_DATABASE_DSN='postgres://companion_app:strong-password@postgres
 先用具有建库权限的 PostgreSQL 账号执行：
 
 ```sql
-CREATE DATABASE companion_service;
-\c companion_service
+CREATE DATABASE "companion-service";
+\c "companion-service"
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
@@ -57,12 +61,13 @@ psql "$COMPANION_DATABASE_DSN" \
 
 ### 2.3 当前表
 
-`docs/sql/companion-service.sql` 当前创建三张表：
+`docs/sql/companion-service.sql` 当前创建四张表：
 
 | 表 | 用途 |
 | --- | --- |
-| `companion_conversation` | 保存会话归属、陪伴角色、状态和会话摘要 |
+| `companion_conversation` | 保存内部上下文段归属、陪伴角色、状态、上下文摘要和破冰阶段 |
 | `companion_message` | 保存用户消息和陪伴回复 |
+| `companion_message_asset` | 保存图片/视频的资产引用和访问地址，二进制不落库 |
 | `companion_memory` | 保存异步抽取的 L1 偏好、事实和目标记忆 |
 
 字段、索引、外键和每个字段的业务含义以 [sql/companion-service.sql](sql/companion-service.sql) 为准。
@@ -71,7 +76,8 @@ psql "$COMPANION_DATABASE_DSN" \
 
 - `companion_message.conversation_id` 外键保证消息只能属于已存在的会话。
 - 当前外键没有配置 `ON DELETE CASCADE`。
-- 账号删除由服务事务显式删除消息、会话和记忆，不能只删除会话主表。
+- 当前服务不提供账号级数据导出或删除能力；仅支持按消息来源撤销记忆。
+- 如未来启用账号级数据治理，必须由独立运营系统设计可审计的删除任务，不能直接复用用户侧接口。
 - `companion_memory.source_message_id` 当前只保存来源消息 ID，没有建立数据库外键，便于记忆生命周期和删除流程独立处理。
 
 ## 3. model-gateway
@@ -86,4 +92,4 @@ psql "$COMPANION_DATABASE_DSN" \
 
 ## 4. PostgreSQL 说明
 
-当前 Companion 已使用 PostgreSQL + pgvector 保存记忆向量，并通过 `embedding <=> query::vector` 做 cosine 距离排序。生产配置还使用 RocketMQ 投递记忆任务；L2/L3/R 版本化记忆、Redis 缓存和 OSS 音频对象仍需等对应持久化调用方合入后再增加资源。
+当前 Companion 已使用 PostgreSQL + pgvector 保存记忆向量，并通过 `embedding <=> query::vector` 做 cosine 距离排序。生产配置还使用 RocketMQ 投递记忆任务；原始图片和视频由 `asset-service` 写入 OSS，PostgreSQL 只保存关联引用。

@@ -10,6 +10,7 @@ import (
 	companionclient "companion-service/internal/client"
 	"companion-service/internal/conf"
 	"companion-service/internal/data"
+	"companion-service/internal/lexicon"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -29,16 +30,22 @@ type Processor struct {
 	queue              chan Job
 	remoteQueue        jobQueue
 	extractor          *Extractor
-	store              *data.Store
-	log                *log.Helper
-	ctx                context.Context
-	cancel             context.CancelFunc
-	wg                 sync.WaitGroup
-	blocked            sync.Map
-	lifecycle          sync.RWMutex
+	store              interface {
+		SaveMemory(context.Context, *data.MemoryModel) error
+	}
+	log       *log.Helper
+	ctx       context.Context
+	cancel    context.CancelFunc
+	wg        sync.WaitGroup
+	blocked   sync.Map
+	lifecycle sync.RWMutex
 }
 
-func NewProcessor(c *conf.Memory, queueConfig *conf.Queue, store *data.Store, models *companionclient.ModelGatewayClient, logger log.Logger) (*Processor, func(), error) {
+type MemoryStore interface {
+	SaveMemory(context.Context, *data.MemoryModel) error
+}
+
+func NewProcessor(c *conf.Memory, queueConfig *conf.Queue, store MemoryStore, models companionclient.ModelGateway, logger log.Logger) (*Processor, func(), error) {
 	queueSize := 100
 	embeddingDimension := 1536
 	enabled := false
@@ -71,7 +78,9 @@ func NewProcessor(c *conf.Memory, queueConfig *conf.Queue, store *data.Store, mo
 			return nil, nil, err
 		}
 	}
-	processor.remoteQueue = remoteQueue
+	if remoteQueue != nil {
+		processor.remoteQueue = remoteQueue
+	}
 	if enabled && remoteQueue == nil {
 		processor.wg.Add(1)
 		go processor.run()
@@ -187,8 +196,7 @@ func (p *Processor) isBlocked(userID string) bool {
 
 func ShouldSkipMemory(content string) bool {
 	lower := strings.ToLower(strings.TrimSpace(content))
-	markers := []string{"不要记住", "别记住", "不要保存", "do not remember", "don't remember", "do not save", "don't save"}
-	for _, marker := range markers {
+	for _, marker := range lexicon.ForLocale(string(lexicon.DefaultLocale)).Memory.SkipMarkers {
 		if strings.Contains(lower, marker) {
 			return true
 		}

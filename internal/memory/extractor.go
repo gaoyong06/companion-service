@@ -7,14 +7,9 @@ import (
 	"strings"
 
 	companionclient "companion-service/internal/client"
+	"companion-service/internal/lexicon"
 	modelv1 "model-gateway/api/model_gateway/v1"
 )
-
-const extractionPrompt = `You extract durable, low-risk user memories from one user message.
-Return JSON only in this exact shape: {"memories":[{"kind":"preference|fact|goal","content":"...","confidence":0.0,"importance":1}]}
-Only keep stable preferences, important personal facts, or ongoing goals that can improve future conversation.
-Do not keep secrets, passwords, tokens, financial data, identity numbers, precise addresses, medical diagnoses, or one-off emotions.
-Return an empty memories array when there is no durable memory.`
 
 type Candidate struct {
 	Kind       string  `json:"kind"`
@@ -28,10 +23,10 @@ type extractionResponse struct {
 }
 
 type Extractor struct {
-	models *companionclient.ModelGatewayClient
+	models companionclient.ModelGateway
 }
 
-func NewExtractor(models *companionclient.ModelGatewayClient) *Extractor {
+func NewExtractor(models companionclient.ModelGateway) *Extractor {
 	return &Extractor{models: models}
 }
 
@@ -39,8 +34,9 @@ func (e *Extractor) Extract(ctx context.Context, content string) ([]Candidate, e
 	if e == nil || e.models == nil {
 		return nil, fmt.Errorf("memory model client is unavailable")
 	}
+	catalog := lexicon.ForLocale(lexicon.LocaleFromContext(ctx))
 	response, err := e.models.Chat(ctx, &modelv1.ChatCompletionRequest{Messages: []*modelv1.ChatMessage{
-		{Role: "system", Content: extractionPrompt},
+		{Role: "system", Content: catalog.Prompts.MemoryExtraction},
 		{Role: "user", Content: content},
 	}})
 	if err != nil {
@@ -50,6 +46,7 @@ func (e *Extractor) Extract(ctx context.Context, content string) ([]Candidate, e
 }
 
 func parseCandidates(content string) ([]Candidate, error) {
+	catalog := lexicon.ForLocale(string(lexicon.DefaultLocale))
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
 	if start < 0 || end <= start {
@@ -63,7 +60,7 @@ func parseCandidates(content string) ([]Candidate, error) {
 	for _, candidate := range response.Memories {
 		candidate.Kind = strings.TrimSpace(strings.ToLower(candidate.Kind))
 		candidate.Content = strings.TrimSpace(candidate.Content)
-		if !validKind(candidate.Kind) || candidate.Content == "" || len(candidate.Content) > 512 || containsSensitiveTerm(candidate.Content) {
+		if !validKind(candidate.Kind) || candidate.Content == "" || len(candidate.Content) > 512 || containsSensitiveTerm(candidate.Content, catalog.Memory.SensitiveTerms) {
 			continue
 		}
 		if candidate.Confidence < 0.75 {
@@ -94,9 +91,8 @@ func IsSupportedKind(kind string) bool {
 	return validKind(strings.TrimSpace(strings.ToLower(kind)))
 }
 
-func containsSensitiveTerm(content string) bool {
+func containsSensitiveTerm(content string, terms []string) bool {
 	lower := strings.ToLower(content)
-	terms := []string{"password", "api key", "token", "secret", "身份证", "银行卡", "信用卡", "medical diagnosis", "precise address"}
 	for _, term := range terms {
 		if strings.Contains(lower, term) {
 			return true

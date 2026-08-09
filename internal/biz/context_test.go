@@ -64,3 +64,52 @@ func TestBuildChatMessagesAddsFirstMeetingGuidanceOnlyForNewConversation(t *test
 		t.Fatalf("unexpected ongoing conversation guidance, got %+v", ongoing)
 	}
 }
+
+func TestBuildChatMessagesForLocaleUsesLocalizedCatalog(t *testing.T) {
+	messages := BuildChatMessagesForLocale(nil, nil, "hello", "en-US")
+	if len(messages) != 2 || messages[0].Role != "system" {
+		t.Fatalf("unexpected English first-meeting context: %+v", messages)
+	}
+	if !strings.Contains(messages[0].Content, "My name is Nana") || !strings.Contains(messages[0].Content, "This is your first meeting") {
+		t.Fatalf("expected localized English prompts, got %q", messages[0].Content)
+	}
+}
+
+func TestBuildChatMessagesUsesOnboardingStagePrompt(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		stage string
+		want  string
+	}{
+		{name: "first meeting", stage: OnboardingStageFirstMeeting, want: "第一次见面"},
+		{name: "small talk", stage: OnboardingStageSmallTalk, want: "闲聊"},
+		{name: "getting to know", stage: OnboardingStageGettingToKnow, want: "了解"},
+		{name: "trust", stage: OnboardingStageTrust, want: "建立信任"},
+		{name: "established", stage: OnboardingStageEstablished, want: "破冰"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			messages := BuildChatMessagesForLocaleWithStage(nil, nil, "", "hello", nil, tc.stage, "zh-CN")
+			if len(messages) != 2 || !strings.Contains(messages[0].Content, tc.want) {
+				t.Fatalf("stage %q did not select expected prompt %q: %+v", tc.stage, tc.want, messages)
+			}
+		})
+	}
+}
+
+func TestBuildChatMessagesSkipsInvalidHistoryAndEmptyMemory(t *testing.T) {
+	messages := BuildChatMessages([]data.MessageModel{
+		{Role: "", Content: "ignored"},
+		{Role: "user", Content: "kept"},
+	}, []data.MemoryModel{{Kind: "fact", Content: "  "}, {Kind: "goal", Content: "ship MVP"}}, "")
+	if len(messages) != 3 || messages[1].Role != "system" || !strings.Contains(messages[1].Content, "ship MVP") || messages[2].Content != "kept" {
+		t.Fatalf("unexpected filtered context: %+v", messages)
+	}
+}
+
+func TestBuildChatMessagesDropsOversizedMemoryButKeepsCurrentInput(t *testing.T) {
+	memories := []data.MemoryModel{{Kind: "fact", Content: strings.Repeat("x", maxContextCharacters)}}
+	messages := BuildChatMessages(nil, memories, "current")
+	if len(messages) != 2 || messages[len(messages)-1].Content != "current" {
+		t.Fatalf("expected oversized memory to be dropped: %+v", messages)
+	}
+}

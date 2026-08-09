@@ -13,6 +13,7 @@ message Bootstrap {
   Log log = 4;
   Memory memory = 5;
   Queue queue = 6;
+  AssetService asset_service = 7;
 }
 
 message Server {
@@ -47,6 +48,12 @@ message ModelGateway {
   string grpc_addr = 1;
   google.protobuf.Duration timeout = 2;
   string api_key_env = 3;
+}
+
+message AssetService {
+  string grpc_addr = 1;
+  google.protobuf.Duration timeout = 2;
+  string app_id = 3;
 }
 
 message Memory {

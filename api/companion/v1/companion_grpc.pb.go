@@ -19,32 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Companion_CreateConversation_FullMethodName   = "/companion.v1.Companion/CreateConversation"
-	Companion_GetConversation_FullMethodName      = "/companion.v1.Companion/GetConversation"
-	Companion_ListConversations_FullMethodName    = "/companion.v1.Companion/ListConversations"
+	Companion_GetTimeline_FullMethodName          = "/companion.v1.Companion/GetTimeline"
 	Companion_SendMessage_FullMethodName          = "/companion.v1.Companion/SendMessage"
 	Companion_SendMessageStream_FullMethodName    = "/companion.v1.Companion/SendMessageStream"
 	Companion_SendAudioMessage_FullMethodName     = "/companion.v1.Companion/SendAudioMessage"
+	Companion_SendMediaMessage_FullMethodName     = "/companion.v1.Companion/SendMediaMessage"
 	Companion_SubmitMemoryFeedback_FullMethodName = "/companion.v1.Companion/SubmitMemoryFeedback"
-	Companion_CloseConversation_FullMethodName    = "/companion.v1.Companion/CloseConversation"
-	Companion_ExportData_FullMethodName           = "/companion.v1.Companion/ExportData"
-	Companion_DeleteData_FullMethodName           = "/companion.v1.Companion/DeleteData"
 )
 
 // CompanionClient is the client API for Companion service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CompanionClient interface {
-	CreateConversation(ctx context.Context, in *CreateConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error)
-	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error)
-	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ConversationListReply, error)
+	GetTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*TimelineReply, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageReply, error)
 	SendMessageStream(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error)
 	SendAudioMessage(ctx context.Context, in *SendAudioMessageRequest, opts ...grpc.CallOption) (*SendAudioMessageReply, error)
+	SendMediaMessage(ctx context.Context, in *SendMediaMessageRequest, opts ...grpc.CallOption) (*SendMediaMessageReply, error)
 	SubmitMemoryFeedback(ctx context.Context, in *MemoryFeedbackRequest, opts ...grpc.CallOption) (*MemoryFeedbackReply, error)
-	CloseConversation(ctx context.Context, in *CloseConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error)
-	ExportData(ctx context.Context, in *ExportDataRequest, opts ...grpc.CallOption) (*ExportDataReply, error)
-	DeleteData(ctx context.Context, in *DeleteDataRequest, opts ...grpc.CallOption) (*DeleteDataReply, error)
 }
 
 type companionClient struct {
@@ -55,30 +47,10 @@ func NewCompanionClient(cc grpc.ClientConnInterface) CompanionClient {
 	return &companionClient{cc}
 }
 
-func (c *companionClient) CreateConversation(ctx context.Context, in *CreateConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error) {
+func (c *companionClient) GetTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*TimelineReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConversationReply)
-	err := c.cc.Invoke(ctx, Companion_CreateConversation_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *companionClient) GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConversationReply)
-	err := c.cc.Invoke(ctx, Companion_GetConversation_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *companionClient) ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ConversationListReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConversationListReply)
-	err := c.cc.Invoke(ctx, Companion_ListConversations_FullMethodName, in, out, cOpts...)
+	out := new(TimelineReply)
+	err := c.cc.Invoke(ctx, Companion_GetTimeline_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +96,16 @@ func (c *companionClient) SendAudioMessage(ctx context.Context, in *SendAudioMes
 	return out, nil
 }
 
+func (c *companionClient) SendMediaMessage(ctx context.Context, in *SendMediaMessageRequest, opts ...grpc.CallOption) (*SendMediaMessageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendMediaMessageReply)
+	err := c.cc.Invoke(ctx, Companion_SendMediaMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) SubmitMemoryFeedback(ctx context.Context, in *MemoryFeedbackRequest, opts ...grpc.CallOption) (*MemoryFeedbackReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MemoryFeedbackReply)
@@ -134,50 +116,16 @@ func (c *companionClient) SubmitMemoryFeedback(ctx context.Context, in *MemoryFe
 	return out, nil
 }
 
-func (c *companionClient) CloseConversation(ctx context.Context, in *CloseConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConversationReply)
-	err := c.cc.Invoke(ctx, Companion_CloseConversation_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *companionClient) ExportData(ctx context.Context, in *ExportDataRequest, opts ...grpc.CallOption) (*ExportDataReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ExportDataReply)
-	err := c.cc.Invoke(ctx, Companion_ExportData_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *companionClient) DeleteData(ctx context.Context, in *DeleteDataRequest, opts ...grpc.CallOption) (*DeleteDataReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteDataReply)
-	err := c.cc.Invoke(ctx, Companion_DeleteData_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // CompanionServer is the server API for Companion service.
 // All implementations must embed UnimplementedCompanionServer
 // for forward compatibility.
 type CompanionServer interface {
-	CreateConversation(context.Context, *CreateConversationRequest) (*ConversationReply, error)
-	GetConversation(context.Context, *GetConversationRequest) (*ConversationReply, error)
-	ListConversations(context.Context, *ListConversationsRequest) (*ConversationListReply, error)
+	GetTimeline(context.Context, *GetTimelineRequest) (*TimelineReply, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageReply, error)
 	SendMessageStream(*SendMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error
 	SendAudioMessage(context.Context, *SendAudioMessageRequest) (*SendAudioMessageReply, error)
+	SendMediaMessage(context.Context, *SendMediaMessageRequest) (*SendMediaMessageReply, error)
 	SubmitMemoryFeedback(context.Context, *MemoryFeedbackRequest) (*MemoryFeedbackReply, error)
-	CloseConversation(context.Context, *CloseConversationRequest) (*ConversationReply, error)
-	ExportData(context.Context, *ExportDataRequest) (*ExportDataReply, error)
-	DeleteData(context.Context, *DeleteDataRequest) (*DeleteDataReply, error)
 	mustEmbedUnimplementedCompanionServer()
 }
 
@@ -188,14 +136,8 @@ type CompanionServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCompanionServer struct{}
 
-func (UnimplementedCompanionServer) CreateConversation(context.Context, *CreateConversationRequest) (*ConversationReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateConversation not implemented")
-}
-func (UnimplementedCompanionServer) GetConversation(context.Context, *GetConversationRequest) (*ConversationReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetConversation not implemented")
-}
-func (UnimplementedCompanionServer) ListConversations(context.Context, *ListConversationsRequest) (*ConversationListReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListConversations not implemented")
+func (UnimplementedCompanionServer) GetTimeline(context.Context, *GetTimelineRequest) (*TimelineReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTimeline not implemented")
 }
 func (UnimplementedCompanionServer) SendMessage(context.Context, *SendMessageRequest) (*SendMessageReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendMessage not implemented")
@@ -206,17 +148,11 @@ func (UnimplementedCompanionServer) SendMessageStream(*SendMessageRequest, grpc.
 func (UnimplementedCompanionServer) SendAudioMessage(context.Context, *SendAudioMessageRequest) (*SendAudioMessageReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendAudioMessage not implemented")
 }
+func (UnimplementedCompanionServer) SendMediaMessage(context.Context, *SendMediaMessageRequest) (*SendMediaMessageReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendMediaMessage not implemented")
+}
 func (UnimplementedCompanionServer) SubmitMemoryFeedback(context.Context, *MemoryFeedbackRequest) (*MemoryFeedbackReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitMemoryFeedback not implemented")
-}
-func (UnimplementedCompanionServer) CloseConversation(context.Context, *CloseConversationRequest) (*ConversationReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method CloseConversation not implemented")
-}
-func (UnimplementedCompanionServer) ExportData(context.Context, *ExportDataRequest) (*ExportDataReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method ExportData not implemented")
-}
-func (UnimplementedCompanionServer) DeleteData(context.Context, *DeleteDataRequest) (*DeleteDataReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteData not implemented")
 }
 func (UnimplementedCompanionServer) mustEmbedUnimplementedCompanionServer() {}
 func (UnimplementedCompanionServer) testEmbeddedByValue()                   {}
@@ -239,56 +175,20 @@ func RegisterCompanionServer(s grpc.ServiceRegistrar, srv CompanionServer) {
 	s.RegisterService(&Companion_ServiceDesc, srv)
 }
 
-func _Companion_CreateConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateConversationRequest)
+func _Companion_GetTimeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTimelineRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CompanionServer).CreateConversation(ctx, in)
+		return srv.(CompanionServer).GetTimeline(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Companion_CreateConversation_FullMethodName,
+		FullMethod: Companion_GetTimeline_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).CreateConversation(ctx, req.(*CreateConversationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Companion_GetConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConversationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CompanionServer).GetConversation(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Companion_GetConversation_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).GetConversation(ctx, req.(*GetConversationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Companion_ListConversations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConversationsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CompanionServer).ListConversations(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Companion_ListConversations_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).ListConversations(ctx, req.(*ListConversationsRequest))
+		return srv.(CompanionServer).GetTimeline(ctx, req.(*GetTimelineRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -340,6 +240,24 @@ func _Companion_SendAudioMessage_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_SendMediaMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendMediaMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).SendMediaMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_SendMediaMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).SendMediaMessage(ctx, req.(*SendMediaMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_SubmitMemoryFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemoryFeedbackRequest)
 	if err := dec(in); err != nil {
@@ -358,60 +276,6 @@ func _Companion_SubmitMemoryFeedback_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Companion_CloseConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CloseConversationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CompanionServer).CloseConversation(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Companion_CloseConversation_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).CloseConversation(ctx, req.(*CloseConversationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Companion_ExportData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExportDataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CompanionServer).ExportData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Companion_ExportData_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).ExportData(ctx, req.(*ExportDataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Companion_DeleteData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteDataRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CompanionServer).DeleteData(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Companion_DeleteData_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CompanionServer).DeleteData(ctx, req.(*DeleteDataRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Companion_ServiceDesc is the grpc.ServiceDesc for Companion service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -420,16 +284,8 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*CompanionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateConversation",
-			Handler:    _Companion_CreateConversation_Handler,
-		},
-		{
-			MethodName: "GetConversation",
-			Handler:    _Companion_GetConversation_Handler,
-		},
-		{
-			MethodName: "ListConversations",
-			Handler:    _Companion_ListConversations_Handler,
+			MethodName: "GetTimeline",
+			Handler:    _Companion_GetTimeline_Handler,
 		},
 		{
 			MethodName: "SendMessage",
@@ -440,20 +296,12 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Companion_SendAudioMessage_Handler,
 		},
 		{
+			MethodName: "SendMediaMessage",
+			Handler:    _Companion_SendMediaMessage_Handler,
+		},
+		{
 			MethodName: "SubmitMemoryFeedback",
 			Handler:    _Companion_SubmitMemoryFeedback_Handler,
-		},
-		{
-			MethodName: "CloseConversation",
-			Handler:    _Companion_CloseConversation_Handler,
-		},
-		{
-			MethodName: "ExportData",
-			Handler:    _Companion_ExportData_Handler,
-		},
-		{
-			MethodName: "DeleteData",
-			Handler:    _Companion_DeleteData_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

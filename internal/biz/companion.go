@@ -7,9 +7,11 @@ import (
 	"strings"
 	"time"
 
+	assetv1 "asset-service/api/asset/v1"
 	v1 "companion-service/api/companion/v1"
 	"companion-service/internal/client"
 	"companion-service/internal/data"
+	"companion-service/internal/lexicon"
 	"companion-service/internal/memory"
 	"companion-service/internal/safety"
 	"github.com/gaoyong06/go-pkg/middleware/user_id"
@@ -18,96 +20,135 @@ import (
 )
 
 type CompanionUsecase struct {
-	store  *data.Store
-	models *client.ModelGatewayClient
-	memory *memory.Processor
+	store  conversationStore
+	models client.ModelGateway
+	assets client.AssetStorage
+	memory memoryProcessor
 }
+
+type conversationStore interface {
+	GetOrCreateActiveConversation(context.Context, string, string) (*data.ConversationModel, error)
+	ListMessages(context.Context, string, string, int) ([]data.MessageModel, error)
+	ListTimelineMessages(context.Context, string, int) ([]data.MessageModel, error)
+	GetMessage(context.Context, string, string) (*data.MessageModel, error)
+	CreateMessage(context.Context, *data.MessageModel) error
+	ListRelevantMemories(context.Context, string, []float32, int) ([]data.MemoryModel, error)
+	DeleteMemoriesBySource(context.Context, string, string) error
+	SaveMemory(context.Context, *data.MemoryModel) error
+	AdvanceOnboardingStage(context.Context, string, string, string) error
+}
+
+type ConversationStore = conversationStore
+
+type memoryProcessor interface {
+	Enqueue(memory.Job) error
+	ForgetUser(string)
+}
+
+type MemoryProcessor = memoryProcessor
 
 const maxMessageContentLength = 16 * 1024
 
 const companionMaxTokens int32 = 256
 
-const summaryPrompt = "Summarize this conversation in concise Chinese. Keep only durable context, decisions, ongoing goals, and unresolved topics. Do not include secrets or sensitive personal data. Return plain text under 2000 characters."
+const contextRollCharacterThreshold = 18 * 1024
 
-func NewCompanionUsecase(store *data.Store, models *client.ModelGatewayClient, processor *memory.Processor) *CompanionUsecase {
-	return &CompanionUsecase{store: store, models: models, memory: processor}
+func NewCompanionUsecase(store conversationStore, models client.ModelGateway, assets client.AssetStorage, processor memoryProcessor) *CompanionUsecase {
+	return &CompanionUsecase{store: store, models: models, assets: assets, memory: processor}
 }
 
-func (u *CompanionUsecase) CreateConversation(ctx context.Context, req *v1.CreateConversationRequest) (*data.ConversationModel, error) {
+func (u *CompanionUsecase) activeConversation(ctx context.Context) (*data.ConversationModel, string, error) {
+	userID := user_id.GetUserIDFromContext(ctx)
+	if userID == "" {
+		return nil, "", fmt.Errorf("user identity is required")
+	}
+	const companionID = "default"
+	conversation, err := u.store.GetOrCreateActiveConversation(ctx, userID, companionID)
+	if err != nil {
+		return nil, "", fmt.Errorf("resolve active companion context: %w", err)
+	}
+	return conversation, userID, nil
+}
+
+func (u *CompanionUsecase) rollContextIfNeeded(ctx context.Context, conversation *data.ConversationModel, history []data.MessageModel) (*data.ConversationModel, []data.MessageModel, error) {
+	roller, ok := u.store.(interface {
+		RollActiveConversation(context.Context, *data.ConversationModel, string) (*data.ConversationModel, error)
+	})
+	if !ok || conversation == nil || messageCharacters(history) < contextRollCharacterThreshold {
+		return conversation, history, nil
+	}
+	locale := lexicon.LocaleFromContext(ctx)
+	summaryMessages := make([]*modelv1.ChatMessage, 0, len(history)+1)
+	summaryMessages = append(summaryMessages, &modelv1.ChatMessage{Role: "system", Content: lexicon.ForLocale(locale).Prompts.ConversationSummary})
+	for _, message := range history {
+		if message.Role != "" && strings.TrimSpace(message.Content) != "" {
+			summaryMessages = append(summaryMessages, &modelv1.ChatMessage{Role: message.Role, Content: message.Content})
+		}
+	}
+	result, err := u.models.Chat(ctx, &modelv1.ChatCompletionRequest{Messages: summaryMessages, MaxTokens: 384})
+	if err != nil || strings.TrimSpace(result.Content) == "" {
+		return conversation, history, nil
+	}
+	next, err := roller.RollActiveConversation(ctx, conversation, strings.TrimSpace(result.Content))
+	if err != nil {
+		return nil, nil, fmt.Errorf("roll companion context: %w", err)
+	}
+	return next, nil, nil
+}
+
+func messageCharacters(messages []data.MessageModel) int {
+	total := 0
+	for _, message := range messages {
+		total += len(message.Content)
+	}
+	return total
+}
+
+func (u *CompanionUsecase) GetTimeline(ctx context.Context, req *v1.GetTimelineRequest) ([]data.MessageModel, error) {
 	userID := user_id.GetUserIDFromContext(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("user identity is required")
 	}
-	companionID := ""
-	if req != nil {
-		companionID = strings.TrimSpace(req.CompanionId)
-	}
-	if companionID == "" {
-		companionID = "default"
-	}
-	conversation := u.store.NewConversation(userID, companionID)
-	if err := u.store.CreateConversation(ctx, conversation); err != nil {
-		return nil, fmt.Errorf("create conversation: %w", err)
-	}
-	return conversation, nil
-}
-
-func (u *CompanionUsecase) ListConversations(ctx context.Context, req *v1.ListConversationsRequest) ([]data.ConversationModel, error) {
-	userID := user_id.GetUserIDFromContext(ctx)
-	if userID == "" {
-		return nil, fmt.Errorf("user identity is required")
-	}
-	limit := 20
+	limit := 50
 	if req != nil && req.Limit > 0 {
 		limit = int(req.Limit)
 	}
-	return u.store.ListConversations(ctx, userID, limit)
-}
-
-func (u *CompanionUsecase) GetConversation(ctx context.Context, req *v1.GetConversationRequest) (*data.ConversationModel, []data.MessageModel, error) {
-	userID := user_id.GetUserIDFromContext(ctx)
-	if req == nil || req.ConversationId == "" || userID == "" {
-		return nil, nil, fmt.Errorf("conversation_id and user identity are required")
-	}
-	conversation, err := u.store.GetConversation(ctx, req.ConversationId, userID)
+	messages, err := u.store.ListTimelineMessages(ctx, userID, limit)
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("list companion timeline: %w", err)
 	}
-	messages, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 50)
-	if err != nil {
-		return nil, nil, fmt.Errorf("list conversation messages: %w", err)
-	}
-	return conversation, messages, nil
+	return messages, nil
 }
 
 func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageRequest) (*data.MessageModel, *data.MessageModel, error) {
-	userID := user_id.GetUserIDFromContext(ctx)
 	content := ""
-	conversationID := ""
 	if req != nil {
 		content = strings.TrimSpace(req.Content)
-		conversationID = strings.TrimSpace(req.ConversationId)
 	}
-	if conversationID == "" || userID == "" || content == "" {
-		return nil, nil, fmt.Errorf("conversation_id, user identity and content are required")
+	if content == "" {
+		return nil, nil, fmt.Errorf("user identity and content are required")
+	}
+	conversation, userID, err := u.activeConversation(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 	if len(content) > maxMessageContentLength {
 		return nil, nil, fmt.Errorf("message content exceeds %d bytes", maxMessageContentLength)
 	}
-	conversation, err := u.store.GetConversation(ctx, conversationID, userID)
-	if err != nil {
-		return nil, nil, err
-	}
-	history, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 20)
+	history, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 100)
 	if err != nil {
 		return nil, nil, fmt.Errorf("list conversation history: %w", err)
+	}
+	conversation, history, err = u.rollContextIfNeeded(ctx, conversation, history)
+	if err != nil {
+		return nil, nil, err
 	}
 	userMessage := data.NewMessage(conversation.ConversationID, userID, "user", content)
 	if err := u.store.CreateMessage(ctx, userMessage); err != nil {
 		return nil, nil, fmt.Errorf("save user message: %w", err)
 	}
-	if level := safety.Check(content); level == safety.LevelCrisis {
-		assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", safety.Response(level))
+	if level := safety.CheckForLocale(content, lexicon.LocaleFromContext(ctx)); level == safety.LevelCrisis {
+		assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", safety.ResponseForLocale(level, lexicon.LocaleFromContext(ctx)))
 		if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
 			return userMessage, nil, fmt.Errorf("save safety response: %w", err)
 		}
@@ -115,18 +156,24 @@ func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageR
 	}
 	embeddingReply, embeddingErr := u.models.Embed(ctx, []string{content})
 	var queryEmbedding []float32
-	if embeddingErr == nil && len(embeddingReply.Data) > 0 {
+	if embeddingErr == nil && embeddingReply != nil && len(embeddingReply.Data) > 0 {
 		queryEmbedding = embeddingReply.Data[0].Embedding
 	}
 	activeMemories, _ := u.store.ListRelevantMemories(ctx, userID, queryEmbedding, 5)
-	modelRequest := &modelv1.ChatCompletionRequest{Messages: BuildChatMessages(history, activeMemories, content), MaxTokens: companionMaxTokens}
+	modelRequest := &modelv1.ChatCompletionRequest{Messages: BuildChatMessagesForLocaleWithStage(history, activeMemories, conversation.Summary, content, nil, conversation.OnboardingStage, lexicon.LocaleFromContext(ctx)), MaxTokens: companionMaxTokens}
 	response, err := u.models.Chat(ctx, modelRequest)
 	if err != nil {
 		return userMessage, nil, fmt.Errorf("generate companion response: %w", err)
 	}
+	if response == nil || strings.TrimSpace(response.Content) == "" {
+		return userMessage, nil, fmt.Errorf("companion response is empty")
+	}
 	assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", response.Content)
 	if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
 		return userMessage, nil, fmt.Errorf("save assistant message: %w", err)
+	}
+	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
+		return userMessage, assistantMessage, err
 	}
 	if u.memory != nil {
 		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
@@ -135,8 +182,8 @@ func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageR
 }
 
 func (u *CompanionUsecase) SendAudioMessage(ctx context.Context, req *v1.SendAudioMessageRequest) (*data.MessageModel, *data.MessageModel, []byte, string, error) {
-	if req == nil || len(req.AudioData) == 0 || strings.TrimSpace(req.ConversationId) == "" {
-		return nil, nil, nil, "", fmt.Errorf("conversation_id and audio data are required")
+	if req == nil || len(req.AudioData) == 0 {
+		return nil, nil, nil, "", fmt.Errorf("audio data is required")
 	}
 	transcription, err := u.models.TranscribeAudio(ctx, &modelv1.TranscribeAudioRequest{AudioData: req.AudioData, Filename: req.Filename, ContentType: req.ContentType, Language: req.Language})
 	if err != nil {
@@ -146,7 +193,7 @@ func (u *CompanionUsecase) SendAudioMessage(ctx context.Context, req *v1.SendAud
 	if content == "" {
 		return nil, nil, nil, "", fmt.Errorf("transcription returned empty text")
 	}
-	userMessage, assistantMessage, err := u.SendMessage(ctx, &v1.SendMessageRequest{ConversationId: req.ConversationId, Content: content})
+	userMessage, assistantMessage, err := u.SendMessage(ctx, &v1.SendMessageRequest{Content: content})
 	if err != nil {
 		return userMessage, assistantMessage, nil, "", err
 	}
@@ -160,34 +207,130 @@ func (u *CompanionUsecase) SendAudioMessage(ctx context.Context, req *v1.SendAud
 	return userMessage, assistantMessage, speech.AudioData, speech.ContentType, nil
 }
 
+func (u *CompanionUsecase) SendMediaMessage(ctx context.Context, req *v1.SendMediaMessageRequest) (*data.MessageModel, *data.MessageModel, error) {
+	if req == nil || len(req.Data) == 0 {
+		return nil, nil, fmt.Errorf("media data is required")
+	}
+	mediaType := strings.ToLower(strings.TrimSpace(req.MediaType))
+	contentType := strings.ToLower(strings.TrimSpace(req.ContentType))
+	if mediaType != "image" && mediaType != "video" {
+		return nil, nil, fmt.Errorf("media type must be image or video")
+	}
+	if !strings.HasPrefix(contentType, mediaType+"/") {
+		return nil, nil, fmt.Errorf("content type does not match media type")
+	}
+	maxBytes := 20 * 1024 * 1024
+	if mediaType == "video" {
+		maxBytes = 100 * 1024 * 1024
+	}
+	if len(req.Data) > maxBytes {
+		return nil, nil, fmt.Errorf("media data exceeds %d bytes", maxBytes)
+	}
+	if u.assets == nil {
+		return nil, nil, fmt.Errorf("asset storage is not configured")
+	}
+	conversation, userID, err := u.activeConversation(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	history, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 100)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list conversation history: %w", err)
+	}
+	conversation, history, err = u.rollContextIfNeeded(ctx, conversation, history)
+	if err != nil {
+		return nil, nil, err
+	}
+	upload, err := u.assets.Upload(ctx, &assetv1.UploadFileRequest{Filename: strings.TrimSpace(req.Filename), ContentType: contentType, Data: req.Data, Metadata: map[string]string{"user_id": userID, "source": "companion-message", "media_type": mediaType}})
+	if err != nil {
+		return nil, nil, fmt.Errorf("upload companion media: %w", err)
+	}
+	if upload == nil || upload.FileId == "" || strings.TrimSpace(upload.Url) == "" {
+		return nil, nil, fmt.Errorf("asset service returned incomplete upload")
+	}
+	caption := strings.TrimSpace(req.Caption)
+	if caption == "" {
+		caption = "[" + mediaType + "]"
+	}
+	userMessage := data.NewMessage(conversation.ConversationID, userID, "user", caption)
+	userMessage.Modality = mediaType
+	uploadContentType := strings.TrimSpace(upload.ContentType)
+	if uploadContentType == "" {
+		uploadContentType = contentType
+	}
+	filename := upload.Name
+	if filename == "" {
+		filename = req.Filename
+	}
+	asset := data.MessageAssetModel{AssetID: upload.FileId, MediaType: mediaType, ContentType: uploadContentType, Filename: filename, URL: upload.Url, SizeBytes: upload.Size}
+	userMessage.Assets = []data.MessageAssetModel{asset}
+	creator, ok := u.store.(interface {
+		CreateMessageWithAssets(context.Context, *data.MessageModel, []data.MessageAssetModel) error
+	})
+	if !ok {
+		return nil, nil, fmt.Errorf("media message storage is not configured")
+	}
+	if err := creator.CreateMessageWithAssets(ctx, userMessage, userMessage.Assets); err != nil {
+		return nil, nil, fmt.Errorf("save media message: %w", err)
+	}
+	if level := safety.CheckForLocale(caption, lexicon.LocaleFromContext(ctx)); level == safety.LevelCrisis {
+		assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", safety.ResponseForLocale(level, lexicon.LocaleFromContext(ctx)))
+		if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
+			return userMessage, nil, fmt.Errorf("save safety response: %w", err)
+		}
+		return userMessage, assistantMessage, nil
+	}
+	activeMemories, _ := u.store.ListRelevantMemories(ctx, userID, nil, 5)
+	modelRequest := &modelv1.ChatCompletionRequest{Messages: BuildChatMessagesForLocaleWithStage(history, activeMemories, conversation.Summary, caption, userMessage.Assets, conversation.OnboardingStage, lexicon.LocaleFromContext(ctx)), MaxTokens: companionMaxTokens}
+	response, err := u.models.Chat(ctx, modelRequest)
+	if err != nil {
+		return userMessage, nil, fmt.Errorf("generate companion media response: %w", err)
+	}
+	if response == nil || strings.TrimSpace(response.Content) == "" {
+		return userMessage, nil, fmt.Errorf("companion media response is empty")
+	}
+	assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", response.Content)
+	if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
+		return userMessage, nil, fmt.Errorf("save assistant message: %w", err)
+	}
+	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
+		return userMessage, assistantMessage, err
+	}
+	if u.memory != nil && caption != "["+mediaType+"]" {
+		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: caption})
+	}
+	return userMessage, assistantMessage, nil
+}
+
 func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMessageRequest, emit func(*v1.MessageChunk) error) error {
-	userID := user_id.GetUserIDFromContext(ctx)
 	content := ""
-	conversationID := ""
 	if req != nil {
 		content = strings.TrimSpace(req.Content)
-		conversationID = strings.TrimSpace(req.ConversationId)
 	}
-	if conversationID == "" || userID == "" || content == "" {
-		return fmt.Errorf("conversation_id, user identity and content are required")
+	if content == "" {
+		return fmt.Errorf("user identity and content are required")
+	}
+	conversation, userID, err := u.activeConversation(ctx)
+	if err != nil {
+		return err
 	}
 	if len(content) > maxMessageContentLength {
 		return fmt.Errorf("message content exceeds %d bytes", maxMessageContentLength)
 	}
-	conversation, err := u.store.GetConversation(ctx, conversationID, userID)
-	if err != nil {
-		return err
-	}
-	history, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 20)
+	history, err := u.store.ListMessages(ctx, conversation.ConversationID, userID, 100)
 	if err != nil {
 		return fmt.Errorf("list conversation history: %w", err)
+	}
+	conversation, history, err = u.rollContextIfNeeded(ctx, conversation, history)
+	if err != nil {
+		return err
 	}
 	userMessage := data.NewMessage(conversation.ConversationID, userID, "user", content)
 	if err := u.store.CreateMessage(ctx, userMessage); err != nil {
 		return fmt.Errorf("save user message: %w", err)
 	}
-	if level := safety.Check(content); level == safety.LevelCrisis {
-		assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", safety.Response(level))
+	if level := safety.CheckForLocale(content, lexicon.LocaleFromContext(ctx)); level == safety.LevelCrisis {
+		assistantMessage := data.NewMessage(conversation.ConversationID, userID, "assistant", safety.ResponseForLocale(level, lexicon.LocaleFromContext(ctx)))
 		if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
 			return fmt.Errorf("save safety response: %w", err)
 		}
@@ -195,11 +338,11 @@ func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMe
 	}
 	embeddingReply, embeddingErr := u.models.Embed(ctx, []string{content})
 	var queryEmbedding []float32
-	if embeddingErr == nil && len(embeddingReply.Data) > 0 {
+	if embeddingErr == nil && embeddingReply != nil && len(embeddingReply.Data) > 0 {
 		queryEmbedding = embeddingReply.Data[0].Embedding
 	}
 	activeMemories, _ := u.store.ListRelevantMemories(ctx, userID, queryEmbedding, 5)
-	stream, err := u.models.ChatStream(ctx, &modelv1.ChatCompletionRequest{Messages: BuildChatMessages(history, activeMemories, content), MaxTokens: companionMaxTokens, Stream: true})
+	stream, err := u.models.ChatStream(ctx, &modelv1.ChatCompletionRequest{Messages: BuildChatMessagesForLocaleWithStage(history, activeMemories, conversation.Summary, content, nil, conversation.OnboardingStage, lexicon.LocaleFromContext(ctx)), MaxTokens: companionMaxTokens, Stream: true})
 	if err != nil {
 		if ctx.Err() != nil {
 			return nil
@@ -239,23 +382,34 @@ func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMe
 	if err := u.store.CreateMessage(ctx, assistantMessage); err != nil {
 		return fmt.Errorf("save assistant message: %w", err)
 	}
+	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
+		return err
+	}
 	if u.memory != nil {
 		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
 	}
 	return nil
 }
 
+func (u *CompanionUsecase) advanceOnboarding(ctx context.Context, conversation *data.ConversationModel, userID string) error {
+	if conversation == nil || normalizeOnboardingStage(conversation.OnboardingStage) == OnboardingStageEstablished {
+		return nil
+	}
+	stage := nextOnboardingStage(conversation.OnboardingStage)
+	if err := u.store.AdvanceOnboardingStage(ctx, conversation.ConversationID, userID, stage); err != nil {
+		return fmt.Errorf("advance onboarding stage: %w", err)
+	}
+	conversation.OnboardingStage = stage
+	return nil
+}
+
 func (u *CompanionUsecase) SubmitMemoryFeedback(ctx context.Context, req *v1.MemoryFeedbackRequest) error {
 	userID := user_id.GetUserIDFromContext(ctx)
-	if req == nil || userID == "" || strings.TrimSpace(req.ConversationId) == "" || strings.TrimSpace(req.MessageId) == "" {
-		return fmt.Errorf("conversation_id, message_id and user identity are required")
+	if req == nil || userID == "" || strings.TrimSpace(req.MessageId) == "" {
+		return fmt.Errorf("message_id and user identity are required")
 	}
-	conversationID := strings.TrimSpace(req.ConversationId)
 	messageID := strings.TrimSpace(req.MessageId)
-	if _, err := u.store.GetConversation(ctx, conversationID, userID); err != nil {
-		return err
-	}
-	if _, err := u.store.GetMessage(ctx, messageID, conversationID, userID); err != nil {
+	if _, err := u.store.GetMessage(ctx, messageID, userID); err != nil {
 		return err
 	}
 	action := strings.ToLower(strings.TrimSpace(req.Action))
@@ -289,97 +443,10 @@ func (u *CompanionUsecase) SubmitMemoryFeedback(ctx context.Context, req *v1.Mem
 	})
 }
 
-func (u *CompanionUsecase) CloseConversation(ctx context.Context, req *v1.CloseConversationRequest) (*data.ConversationModel, error) {
-	userID := user_id.GetUserIDFromContext(ctx)
-	if req == nil || userID == "" || strings.TrimSpace(req.ConversationId) == "" {
-		return nil, fmt.Errorf("conversation_id and user identity are required")
-	}
-	conversationID := strings.TrimSpace(req.ConversationId)
-	conversation, err := u.store.GetConversation(ctx, conversationID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if conversation.Status != "active" {
-		return conversation, nil
-	}
-	history, err := u.store.ListMessages(ctx, conversationID, userID, 50)
-	if err != nil {
-		return nil, fmt.Errorf("list conversation messages: %w", err)
-	}
-	summary := strings.TrimSpace(conversation.Summary)
-	if len(history) > 0 {
-		messages := []*modelv1.ChatMessage{{Role: "system", Content: summaryPrompt}}
-		messages = append(messages, BuildChatMessages(history, nil, "")...)
-		response, callErr := u.models.Chat(ctx, &modelv1.ChatCompletionRequest{Messages: messages})
-		if callErr != nil {
-			return nil, fmt.Errorf("generate conversation summary: %w", callErr)
-		}
-		summary = strings.TrimSpace(response.Content)
-		if runes := []rune(summary); len(runes) > 2000 {
-			summary = string(runes[:2000])
-		}
-	}
-	closed, err := u.store.CloseConversation(ctx, conversationID, userID, summary, time.Now().UTC())
-	if err != nil {
-		return nil, fmt.Errorf("close conversation: %w", err)
-	}
-	return closed, nil
-}
-
-func (u *CompanionUsecase) ExportData(ctx context.Context) (*v1.ExportDataReply, error) {
-	userID := user_id.GetUserIDFromContext(ctx)
-	if userID == "" {
-		return nil, fmt.Errorf("user identity is required")
-	}
-	conversations, messages, memories, err := u.store.ExportUserData(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("export user data: %w", err)
-	}
-	messageGroups := make(map[string][]data.MessageModel, len(conversations))
-	for _, message := range messages {
-		messageGroups[message.ConversationID] = append(messageGroups[message.ConversationID], message)
-	}
-	reply := &v1.ExportDataReply{Conversations: make([]*v1.Conversation, 0, len(conversations)), Memories: make([]*v1.MemorySnapshot, 0, len(memories))}
-	for index := range conversations {
-		conversation := conversations[index]
-		reply.Conversations = append(reply.Conversations, ConversationToProto(&conversation, messageGroups[conversation.ConversationID]))
-	}
-	for _, memoryModel := range memories {
-		reply.Memories = append(reply.Memories, &v1.MemorySnapshot{MemoryId: memoryModel.MemoryID, Layer: memoryModel.Layer, Kind: memoryModel.Kind, Content: memoryModel.Content, Status: memoryModel.Status, CreatedAt: memoryModel.CreatedAt.Format(time.RFC3339), UpdatedAt: memoryModel.UpdatedAt.Format(time.RFC3339)})
-	}
-	return reply, nil
-}
-
-func (u *CompanionUsecase) DeleteData(ctx context.Context) error {
-	userID := user_id.GetUserIDFromContext(ctx)
-	if userID == "" {
-		return fmt.Errorf("user identity is required")
-	}
-	if u.memory != nil {
-		u.memory.ForgetUser(userID)
-	}
-	if err := u.store.DeleteUserData(ctx, userID); err != nil {
-		return fmt.Errorf("delete user data: %w", err)
-	}
-	return nil
-}
-
-func ConversationsToProto(models []data.ConversationModel) []*v1.Conversation {
-	result := make([]*v1.Conversation, 0, len(models))
-	for index := range models {
-		result = append(result, ConversationToProto(&models[index], nil))
-	}
-	return result
-}
-
-func ConversationToProto(model *data.ConversationModel, messages []data.MessageModel) *v1.Conversation {
-	result := &v1.Conversation{ConversationId: model.ConversationID, UserId: model.UserID, CompanionId: model.CompanionID, Status: model.Status, Summary: model.Summary, CreatedAt: model.CreatedAt.Format(time.RFC3339), UpdatedAt: model.UpdatedAt.Format(time.RFC3339)}
-	for _, message := range messages {
-		result.Messages = append(result.Messages, MessageToProto(&message))
-	}
-	return result
-}
-
 func MessageToProto(model *data.MessageModel) *v1.ConversationMessage {
-	return &v1.ConversationMessage{MessageId: model.MessageID, Role: model.Role, Content: model.Content, CreatedAt: model.CreatedAt.Format(time.RFC3339)}
+	message := &v1.ConversationMessage{MessageId: model.MessageID, Role: model.Role, Content: model.Content, CreatedAt: model.CreatedAt.Format(time.RFC3339)}
+	for _, asset := range model.Assets {
+		message.Assets = append(message.Assets, &v1.MessageAsset{MessageAssetId: asset.MessageAssetID, AssetId: asset.AssetID, MediaType: asset.MediaType, ContentType: asset.ContentType, Filename: asset.Filename, Url: asset.URL, SizeBytes: asset.SizeBytes})
+	}
+	return message
 }

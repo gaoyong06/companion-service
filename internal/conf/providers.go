@@ -44,4 +44,11 @@ func NewQueueConfig(b *Bootstrap) *Queue {
 	return b.Queue
 }
 
-var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig, NewMemoryConfig, NewQueueConfig)
+func NewAssetServiceConfig(b *Bootstrap) *AssetService {
+	if b == nil {
+		return nil
+	}
+	return b.AssetService
+}
+
+var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig, NewMemoryConfig, NewQueueConfig, NewAssetServiceConfig)

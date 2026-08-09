@@ -37,21 +37,30 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		cleanup()
 		return nil, nil, err
 	}
-	confMemory := conf.NewMemoryConfig(bootstrap)
-	queue := conf.NewQueueConfig(bootstrap)
-	processor, cleanup3, err := memory.NewProcessor(confMemory, queue, store, modelGatewayClient, logger)
+	assetService := conf.NewAssetServiceConfig(bootstrap)
+	assetClient, cleanup3, err := client.NewAssetClient(assetService)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient, processor)
+	confMemory := conf.NewMemoryConfig(bootstrap)
+	queue := conf.NewQueueConfig(bootstrap)
+	processor, cleanup4, err := memory.NewProcessor(confMemory, queue, store, modelGatewayClient, logger)
+	if err != nil {
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient, assetClient, processor)
 	companionService := service.NewCompanionService(companionUsecase)
 	httpServer := server.NewHTTPServer(http, companionService)
 	grpc := conf.NewGRPCConfig(bootstrap)
 	grpcServer := server.NewGRPCServer(grpc, companionService)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
+		cleanup4()
 		cleanup3()
 		cleanup2()
 		cleanup()
