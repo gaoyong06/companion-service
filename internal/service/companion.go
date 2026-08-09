@@ -48,6 +48,14 @@ func (s *CompanionService) SendMessage(ctx context.Context, req *v1.SendMessageR
 	return &v1.SendMessageReply{UserMessage: biz.MessageToProto(userMessage), AssistantMessage: biz.MessageToProto(assistantMessage)}, nil
 }
 
+func (s *CompanionService) SendAudioMessage(ctx context.Context, req *v1.SendAudioMessageRequest) (*v1.SendAudioMessageReply, error) {
+	userMessage, assistantMessage, audioData, contentType, err := s.usecase.SendAudioMessage(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.SendAudioMessageReply{Message: &v1.SendMessageReply{UserMessage: biz.MessageToProto(userMessage), AssistantMessage: biz.MessageToProto(assistantMessage)}, AudioData: audioData, AudioContentType: contentType}, nil
+}
+
 func (s *CompanionService) SendMessageStream(req *v1.SendMessageRequest, server v1.Companion_SendMessageStreamServer) error {
 	return s.SendMessageStreamWithEmitter(server.Context(), req, server.Send)
 }

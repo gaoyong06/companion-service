@@ -514,6 +514,158 @@ func (x *SendMessageReply) GetAssistantMessage() *ConversationMessage {
 	return nil
 }
 
+type SendAudioMessageRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ConversationId string                 `protobuf:"bytes,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	AudioData      []byte                 `protobuf:"bytes,2,opt,name=audio_data,json=audioData,proto3" json:"audio_data,omitempty"`
+	Filename       string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType    string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Language       string                 `protobuf:"bytes,5,opt,name=language,proto3" json:"language,omitempty"`
+	Voice          string                 `protobuf:"bytes,6,opt,name=voice,proto3" json:"voice,omitempty"`
+	Synthesize     bool                   `protobuf:"varint,7,opt,name=synthesize,proto3" json:"synthesize,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SendAudioMessageRequest) Reset() {
+	*x = SendAudioMessageRequest{}
+	mi := &file_companion_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendAudioMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendAudioMessageRequest) ProtoMessage() {}
+
+func (x *SendAudioMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendAudioMessageRequest.ProtoReflect.Descriptor instead.
+func (*SendAudioMessageRequest) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SendAudioMessageRequest) GetConversationId() string {
+	if x != nil {
+		return x.ConversationId
+	}
+	return ""
+}
+
+func (x *SendAudioMessageRequest) GetAudioData() []byte {
+	if x != nil {
+		return x.AudioData
+	}
+	return nil
+}
+
+func (x *SendAudioMessageRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *SendAudioMessageRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *SendAudioMessageRequest) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
+}
+
+func (x *SendAudioMessageRequest) GetVoice() string {
+	if x != nil {
+		return x.Voice
+	}
+	return ""
+}
+
+func (x *SendAudioMessageRequest) GetSynthesize() bool {
+	if x != nil {
+		return x.Synthesize
+	}
+	return false
+}
+
+type SendAudioMessageReply struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Message          *SendMessageReply      `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	AudioData        []byte                 `protobuf:"bytes,2,opt,name=audio_data,json=audioData,proto3" json:"audio_data,omitempty"`
+	AudioContentType string                 `protobuf:"bytes,3,opt,name=audio_content_type,json=audioContentType,proto3" json:"audio_content_type,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SendAudioMessageReply) Reset() {
+	*x = SendAudioMessageReply{}
+	mi := &file_companion_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendAudioMessageReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendAudioMessageReply) ProtoMessage() {}
+
+func (x *SendAudioMessageReply) ProtoReflect() protoreflect.Message {
+	mi := &file_companion_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendAudioMessageReply.ProtoReflect.Descriptor instead.
+func (*SendAudioMessageReply) Descriptor() ([]byte, []int) {
+	return file_companion_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SendAudioMessageReply) GetMessage() *SendMessageReply {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *SendAudioMessageReply) GetAudioData() []byte {
+	if x != nil {
+		return x.AudioData
+	}
+	return nil
+}
+
+func (x *SendAudioMessageReply) GetAudioContentType() string {
+	if x != nil {
+		return x.AudioContentType
+	}
+	return ""
+}
+
 type MessageChunk struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
@@ -526,7 +678,7 @@ type MessageChunk struct {
 
 func (x *MessageChunk) Reset() {
 	*x = MessageChunk{}
-	mi := &file_companion_proto_msgTypes[9]
+	mi := &file_companion_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -538,7 +690,7 @@ func (x *MessageChunk) String() string {
 func (*MessageChunk) ProtoMessage() {}
 
 func (x *MessageChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[9]
+	mi := &file_companion_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -551,7 +703,7 @@ func (x *MessageChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageChunk.ProtoReflect.Descriptor instead.
 func (*MessageChunk) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{9}
+	return file_companion_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MessageChunk) GetMessageId() string {
@@ -595,7 +747,7 @@ type MemoryFeedbackRequest struct {
 
 func (x *MemoryFeedbackRequest) Reset() {
 	*x = MemoryFeedbackRequest{}
-	mi := &file_companion_proto_msgTypes[10]
+	mi := &file_companion_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +759,7 @@ func (x *MemoryFeedbackRequest) String() string {
 func (*MemoryFeedbackRequest) ProtoMessage() {}
 
 func (x *MemoryFeedbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[10]
+	mi := &file_companion_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +772,7 @@ func (x *MemoryFeedbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryFeedbackRequest.ProtoReflect.Descriptor instead.
 func (*MemoryFeedbackRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{10}
+	return file_companion_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MemoryFeedbackRequest) GetConversationId() string {
@@ -667,7 +819,7 @@ type MemoryFeedbackReply struct {
 
 func (x *MemoryFeedbackReply) Reset() {
 	*x = MemoryFeedbackReply{}
-	mi := &file_companion_proto_msgTypes[11]
+	mi := &file_companion_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +831,7 @@ func (x *MemoryFeedbackReply) String() string {
 func (*MemoryFeedbackReply) ProtoMessage() {}
 
 func (x *MemoryFeedbackReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[11]
+	mi := &file_companion_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,7 +844,7 @@ func (x *MemoryFeedbackReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryFeedbackReply.ProtoReflect.Descriptor instead.
 func (*MemoryFeedbackReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{11}
+	return file_companion_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *MemoryFeedbackReply) GetAccepted() bool {
@@ -711,7 +863,7 @@ type CloseConversationRequest struct {
 
 func (x *CloseConversationRequest) Reset() {
 	*x = CloseConversationRequest{}
-	mi := &file_companion_proto_msgTypes[12]
+	mi := &file_companion_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -723,7 +875,7 @@ func (x *CloseConversationRequest) String() string {
 func (*CloseConversationRequest) ProtoMessage() {}
 
 func (x *CloseConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[12]
+	mi := &file_companion_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -736,7 +888,7 @@ func (x *CloseConversationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloseConversationRequest.ProtoReflect.Descriptor instead.
 func (*CloseConversationRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{12}
+	return file_companion_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CloseConversationRequest) GetConversationId() string {
@@ -754,7 +906,7 @@ type ExportDataRequest struct {
 
 func (x *ExportDataRequest) Reset() {
 	*x = ExportDataRequest{}
-	mi := &file_companion_proto_msgTypes[13]
+	mi := &file_companion_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -766,7 +918,7 @@ func (x *ExportDataRequest) String() string {
 func (*ExportDataRequest) ProtoMessage() {}
 
 func (x *ExportDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[13]
+	mi := &file_companion_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -779,7 +931,7 @@ func (x *ExportDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportDataRequest.ProtoReflect.Descriptor instead.
 func (*ExportDataRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{13}
+	return file_companion_proto_rawDescGZIP(), []int{15}
 }
 
 type ExportDataReply struct {
@@ -792,7 +944,7 @@ type ExportDataReply struct {
 
 func (x *ExportDataReply) Reset() {
 	*x = ExportDataReply{}
-	mi := &file_companion_proto_msgTypes[14]
+	mi := &file_companion_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -804,7 +956,7 @@ func (x *ExportDataReply) String() string {
 func (*ExportDataReply) ProtoMessage() {}
 
 func (x *ExportDataReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[14]
+	mi := &file_companion_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -817,7 +969,7 @@ func (x *ExportDataReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportDataReply.ProtoReflect.Descriptor instead.
 func (*ExportDataReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{14}
+	return file_companion_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ExportDataReply) GetConversations() []*Conversation {
@@ -849,7 +1001,7 @@ type MemorySnapshot struct {
 
 func (x *MemorySnapshot) Reset() {
 	*x = MemorySnapshot{}
-	mi := &file_companion_proto_msgTypes[15]
+	mi := &file_companion_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -861,7 +1013,7 @@ func (x *MemorySnapshot) String() string {
 func (*MemorySnapshot) ProtoMessage() {}
 
 func (x *MemorySnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[15]
+	mi := &file_companion_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -874,7 +1026,7 @@ func (x *MemorySnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemorySnapshot.ProtoReflect.Descriptor instead.
 func (*MemorySnapshot) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{15}
+	return file_companion_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MemorySnapshot) GetMemoryId() string {
@@ -934,7 +1086,7 @@ type DeleteDataRequest struct {
 
 func (x *DeleteDataRequest) Reset() {
 	*x = DeleteDataRequest{}
-	mi := &file_companion_proto_msgTypes[16]
+	mi := &file_companion_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1098,7 @@ func (x *DeleteDataRequest) String() string {
 func (*DeleteDataRequest) ProtoMessage() {}
 
 func (x *DeleteDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[16]
+	mi := &file_companion_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +1111,7 @@ func (x *DeleteDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDataRequest.ProtoReflect.Descriptor instead.
 func (*DeleteDataRequest) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{16}
+	return file_companion_proto_rawDescGZIP(), []int{18}
 }
 
 type DeleteDataReply struct {
@@ -971,7 +1123,7 @@ type DeleteDataReply struct {
 
 func (x *DeleteDataReply) Reset() {
 	*x = DeleteDataReply{}
-	mi := &file_companion_proto_msgTypes[17]
+	mi := &file_companion_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -983,7 +1135,7 @@ func (x *DeleteDataReply) String() string {
 func (*DeleteDataReply) ProtoMessage() {}
 
 func (x *DeleteDataReply) ProtoReflect() protoreflect.Message {
-	mi := &file_companion_proto_msgTypes[17]
+	mi := &file_companion_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -996,7 +1148,7 @@ func (x *DeleteDataReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDataReply.ProtoReflect.Descriptor instead.
 func (*DeleteDataReply) Descriptor() ([]byte, []int) {
-	return file_companion_proto_rawDescGZIP(), []int{17}
+	return file_companion_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DeleteDataReply) GetAccepted() bool {
@@ -1044,7 +1196,23 @@ const file_companion_proto_rawDesc = "" +
 	"\rconversations\x18\x01 \x03(\v2\x1a.companion.v1.ConversationR\rconversations\"\xa8\x01\n" +
 	"\x10SendMessageReply\x12D\n" +
 	"\fuser_message\x18\x01 \x01(\v2!.companion.v1.ConversationMessageR\vuserMessage\x12N\n" +
-	"\x11assistant_message\x18\x02 \x01(\v2!.companion.v1.ConversationMessageR\x10assistantMessage\"|\n" +
+	"\x11assistant_message\x18\x02 \x01(\v2!.companion.v1.ConversationMessageR\x10assistantMessage\"\xf2\x01\n" +
+	"\x17SendAudioMessageRequest\x12'\n" +
+	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\x12\x1d\n" +
+	"\n" +
+	"audio_data\x18\x02 \x01(\fR\taudioData\x12\x1a\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x1a\n" +
+	"\blanguage\x18\x05 \x01(\tR\blanguage\x12\x14\n" +
+	"\x05voice\x18\x06 \x01(\tR\x05voice\x12\x1e\n" +
+	"\n" +
+	"synthesize\x18\a \x01(\bR\n" +
+	"synthesize\"\x9e\x01\n" +
+	"\x15SendAudioMessageReply\x128\n" +
+	"\amessage\x18\x01 \x01(\v2\x1e.companion.v1.SendMessageReplyR\amessage\x12\x1d\n" +
+	"\n" +
+	"audio_data\x18\x02 \x01(\fR\taudioData\x12,\n" +
+	"\x12audio_content_type\x18\x03 \x01(\tR\x10audioContentType\"|\n" +
 	"\fMessageChunk\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x14\n" +
@@ -1078,13 +1246,15 @@ const file_companion_proto_rawDesc = "" +
 	"updated_at\x18\a \x01(\tR\tupdatedAt\"\x13\n" +
 	"\x11DeleteDataRequest\"-\n" +
 	"\x0fDeleteDataReply\x12\x1a\n" +
-	"\baccepted\x18\x01 \x01(\bR\baccepted2\xca\t\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted2\xf4\n" +
+	"\n" +
 	"\tCompanion\x12\x86\x01\n" +
 	"\x12CreateConversation\x12'.companion.v1.CreateConversationRequest\x1a\x1f.companion.v1.ConversationReply\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/companion/v1/conversations\x12\x8f\x01\n" +
 	"\x0fGetConversation\x12$.companion.v1.GetConversationRequest\x1a\x1f.companion.v1.ConversationReply\"5\x82\xd3\xe4\x93\x02/\x12-/companion/v1/conversations/{conversation_id}\x12\x85\x01\n" +
 	"\x11ListConversations\x12&.companion.v1.ListConversationsRequest\x1a#.companion.v1.ConversationListReply\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/companion/v1/conversations\x12\x92\x01\n" +
 	"\vSendMessage\x12 .companion.v1.SendMessageRequest\x1a\x1e.companion.v1.SendMessageReply\"A\x82\xd3\xe4\x93\x02;:\x01*\"6/companion/v1/conversations/{conversation_id}/messages\x12S\n" +
-	"\x11SendMessageStream\x12 .companion.v1.SendMessageRequest\x1a\x1a.companion.v1.MessageChunk0\x01\x12\xa8\x01\n" +
+	"\x11SendMessageStream\x12 .companion.v1.SendMessageRequest\x1a\x1a.companion.v1.MessageChunk0\x01\x12\xa7\x01\n" +
+	"\x10SendAudioMessage\x12%.companion.v1.SendAudioMessageRequest\x1a#.companion.v1.SendAudioMessageReply\"G\x82\xd3\xe4\x93\x02A:\x01*\"</companion/v1/conversations/{conversation_id}/audio-messages\x12\xa8\x01\n" +
 	"\x14SubmitMemoryFeedback\x12#.companion.v1.MemoryFeedbackRequest\x1a!.companion.v1.MemoryFeedbackReply\"H\x82\xd3\xe4\x93\x02B:\x01*\"=/companion/v1/conversations/{conversation_id}/memory-feedback\x12\x9c\x01\n" +
 	"\x11CloseConversation\x12&.companion.v1.CloseConversationRequest\x1a\x1f.companion.v1.ConversationReply\">\x82\xd3\xe4\x93\x028:\x01*\"3/companion/v1/conversations/{conversation_id}/close\x12r\n" +
 	"\n" +
@@ -1104,7 +1274,7 @@ func file_companion_proto_rawDescGZIP() []byte {
 	return file_companion_proto_rawDescData
 }
 
-var file_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_companion_proto_goTypes = []any{
 	(*Conversation)(nil),              // 0: companion.v1.Conversation
 	(*ConversationMessage)(nil),       // 1: companion.v1.ConversationMessage
@@ -1115,15 +1285,17 @@ var file_companion_proto_goTypes = []any{
 	(*ConversationReply)(nil),         // 6: companion.v1.ConversationReply
 	(*ConversationListReply)(nil),     // 7: companion.v1.ConversationListReply
 	(*SendMessageReply)(nil),          // 8: companion.v1.SendMessageReply
-	(*MessageChunk)(nil),              // 9: companion.v1.MessageChunk
-	(*MemoryFeedbackRequest)(nil),     // 10: companion.v1.MemoryFeedbackRequest
-	(*MemoryFeedbackReply)(nil),       // 11: companion.v1.MemoryFeedbackReply
-	(*CloseConversationRequest)(nil),  // 12: companion.v1.CloseConversationRequest
-	(*ExportDataRequest)(nil),         // 13: companion.v1.ExportDataRequest
-	(*ExportDataReply)(nil),           // 14: companion.v1.ExportDataReply
-	(*MemorySnapshot)(nil),            // 15: companion.v1.MemorySnapshot
-	(*DeleteDataRequest)(nil),         // 16: companion.v1.DeleteDataRequest
-	(*DeleteDataReply)(nil),           // 17: companion.v1.DeleteDataReply
+	(*SendAudioMessageRequest)(nil),   // 9: companion.v1.SendAudioMessageRequest
+	(*SendAudioMessageReply)(nil),     // 10: companion.v1.SendAudioMessageReply
+	(*MessageChunk)(nil),              // 11: companion.v1.MessageChunk
+	(*MemoryFeedbackRequest)(nil),     // 12: companion.v1.MemoryFeedbackRequest
+	(*MemoryFeedbackReply)(nil),       // 13: companion.v1.MemoryFeedbackReply
+	(*CloseConversationRequest)(nil),  // 14: companion.v1.CloseConversationRequest
+	(*ExportDataRequest)(nil),         // 15: companion.v1.ExportDataRequest
+	(*ExportDataReply)(nil),           // 16: companion.v1.ExportDataReply
+	(*MemorySnapshot)(nil),            // 17: companion.v1.MemorySnapshot
+	(*DeleteDataRequest)(nil),         // 18: companion.v1.DeleteDataRequest
+	(*DeleteDataReply)(nil),           // 19: companion.v1.DeleteDataReply
 }
 var file_companion_proto_depIdxs = []int32{
 	1,  // 0: companion.v1.Conversation.messages:type_name -> companion.v1.ConversationMessage
@@ -1131,31 +1303,34 @@ var file_companion_proto_depIdxs = []int32{
 	0,  // 2: companion.v1.ConversationListReply.conversations:type_name -> companion.v1.Conversation
 	1,  // 3: companion.v1.SendMessageReply.user_message:type_name -> companion.v1.ConversationMessage
 	1,  // 4: companion.v1.SendMessageReply.assistant_message:type_name -> companion.v1.ConversationMessage
-	0,  // 5: companion.v1.ExportDataReply.conversations:type_name -> companion.v1.Conversation
-	15, // 6: companion.v1.ExportDataReply.memories:type_name -> companion.v1.MemorySnapshot
-	2,  // 7: companion.v1.Companion.CreateConversation:input_type -> companion.v1.CreateConversationRequest
-	3,  // 8: companion.v1.Companion.GetConversation:input_type -> companion.v1.GetConversationRequest
-	4,  // 9: companion.v1.Companion.ListConversations:input_type -> companion.v1.ListConversationsRequest
-	5,  // 10: companion.v1.Companion.SendMessage:input_type -> companion.v1.SendMessageRequest
-	5,  // 11: companion.v1.Companion.SendMessageStream:input_type -> companion.v1.SendMessageRequest
-	10, // 12: companion.v1.Companion.SubmitMemoryFeedback:input_type -> companion.v1.MemoryFeedbackRequest
-	12, // 13: companion.v1.Companion.CloseConversation:input_type -> companion.v1.CloseConversationRequest
-	13, // 14: companion.v1.Companion.ExportData:input_type -> companion.v1.ExportDataRequest
-	16, // 15: companion.v1.Companion.DeleteData:input_type -> companion.v1.DeleteDataRequest
-	6,  // 16: companion.v1.Companion.CreateConversation:output_type -> companion.v1.ConversationReply
-	6,  // 17: companion.v1.Companion.GetConversation:output_type -> companion.v1.ConversationReply
-	7,  // 18: companion.v1.Companion.ListConversations:output_type -> companion.v1.ConversationListReply
-	8,  // 19: companion.v1.Companion.SendMessage:output_type -> companion.v1.SendMessageReply
-	9,  // 20: companion.v1.Companion.SendMessageStream:output_type -> companion.v1.MessageChunk
-	11, // 21: companion.v1.Companion.SubmitMemoryFeedback:output_type -> companion.v1.MemoryFeedbackReply
-	6,  // 22: companion.v1.Companion.CloseConversation:output_type -> companion.v1.ConversationReply
-	14, // 23: companion.v1.Companion.ExportData:output_type -> companion.v1.ExportDataReply
-	17, // 24: companion.v1.Companion.DeleteData:output_type -> companion.v1.DeleteDataReply
-	16, // [16:25] is the sub-list for method output_type
-	7,  // [7:16] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	8,  // 5: companion.v1.SendAudioMessageReply.message:type_name -> companion.v1.SendMessageReply
+	0,  // 6: companion.v1.ExportDataReply.conversations:type_name -> companion.v1.Conversation
+	17, // 7: companion.v1.ExportDataReply.memories:type_name -> companion.v1.MemorySnapshot
+	2,  // 8: companion.v1.Companion.CreateConversation:input_type -> companion.v1.CreateConversationRequest
+	3,  // 9: companion.v1.Companion.GetConversation:input_type -> companion.v1.GetConversationRequest
+	4,  // 10: companion.v1.Companion.ListConversations:input_type -> companion.v1.ListConversationsRequest
+	5,  // 11: companion.v1.Companion.SendMessage:input_type -> companion.v1.SendMessageRequest
+	5,  // 12: companion.v1.Companion.SendMessageStream:input_type -> companion.v1.SendMessageRequest
+	9,  // 13: companion.v1.Companion.SendAudioMessage:input_type -> companion.v1.SendAudioMessageRequest
+	12, // 14: companion.v1.Companion.SubmitMemoryFeedback:input_type -> companion.v1.MemoryFeedbackRequest
+	14, // 15: companion.v1.Companion.CloseConversation:input_type -> companion.v1.CloseConversationRequest
+	15, // 16: companion.v1.Companion.ExportData:input_type -> companion.v1.ExportDataRequest
+	18, // 17: companion.v1.Companion.DeleteData:input_type -> companion.v1.DeleteDataRequest
+	6,  // 18: companion.v1.Companion.CreateConversation:output_type -> companion.v1.ConversationReply
+	6,  // 19: companion.v1.Companion.GetConversation:output_type -> companion.v1.ConversationReply
+	7,  // 20: companion.v1.Companion.ListConversations:output_type -> companion.v1.ConversationListReply
+	8,  // 21: companion.v1.Companion.SendMessage:output_type -> companion.v1.SendMessageReply
+	11, // 22: companion.v1.Companion.SendMessageStream:output_type -> companion.v1.MessageChunk
+	10, // 23: companion.v1.Companion.SendAudioMessage:output_type -> companion.v1.SendAudioMessageReply
+	13, // 24: companion.v1.Companion.SubmitMemoryFeedback:output_type -> companion.v1.MemoryFeedbackReply
+	6,  // 25: companion.v1.Companion.CloseConversation:output_type -> companion.v1.ConversationReply
+	16, // 26: companion.v1.Companion.ExportData:output_type -> companion.v1.ExportDataReply
+	19, // 27: companion.v1.Companion.DeleteData:output_type -> companion.v1.DeleteDataReply
+	18, // [18:28] is the sub-list for method output_type
+	8,  // [8:18] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_companion_proto_init() }
@@ -1169,7 +1344,7 @@ func file_companion_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_companion_proto_rawDesc), len(file_companion_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

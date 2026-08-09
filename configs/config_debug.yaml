@@ -9,7 +9,7 @@ server:
     timeout: 120s
 data:
   database:
-    source: root:@tcp(127.0.0.1:3306)/companion-service?charset=utf8mb4&parseTime=True&loc=Local
+    source: postgres://postgres:postgres@127.0.0.1:5432/companion_service?sslmode=disable
     max_idle_conns: 5
     max_open_conns: 20
 model_gateway:
@@ -19,6 +19,14 @@ model_gateway:
 memory:
   enabled: true
   queue_size: 100
+  embedding_dimension: 1536
+queue:
+  enabled: false
+  driver: rocketmq
+  name_servers:
+    - 127.0.0.1:9876
+  group_name: companion_memory
+  topic: companion_memory_extract
 log:
   level: debug
   format: console

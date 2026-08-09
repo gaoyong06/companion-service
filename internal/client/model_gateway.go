@@ -55,6 +55,37 @@ func (c *ModelGatewayClient) Chat(ctx context.Context, req *modelv1.ChatCompleti
 	return c.client.ChatCompletion(callCtx, req)
 }
 
+// Embed 将文本转换为供应商无关的向量表示。
+func (c *ModelGatewayClient) Embed(ctx context.Context, input []string) (*modelv1.CreateEmbeddingReply, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("embedding input is required")
+	}
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
+	return c.client.CreateEmbedding(callCtx, &modelv1.CreateEmbeddingRequest{Input: input})
+}
+
+func (c *ModelGatewayClient) TranscribeAudio(ctx context.Context, req *modelv1.TranscribeAudioRequest) (*modelv1.TranscribeAudioReply, error) {
+	if req == nil || len(req.AudioData) == 0 {
+		return nil, fmt.Errorf("audio data is required")
+	}
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
+	return c.client.TranscribeAudio(callCtx, req)
+}
+
+func (c *ModelGatewayClient) SynthesizeSpeech(ctx context.Context, req *modelv1.SynthesizeSpeechRequest) (*modelv1.SynthesizeSpeechReply, error) {
+	if req == nil || req.Text == "" {
+		return nil, fmt.Errorf("speech text is required")
+	}
+	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)
+	return c.client.SynthesizeSpeech(callCtx, req)
+}
+
 func (c *ModelGatewayClient) ChatStream(ctx context.Context, req *modelv1.ChatCompletionRequest) (modelv1.ModelGateway_ChatCompletionStreamClient, error) {
 	callCtx, cancel := context.WithTimeout(ctx, c.timeout)
 	callCtx = metadata.AppendToOutgoingContext(callCtx, "x-model-gateway-key", c.apiKey)

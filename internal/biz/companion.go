@@ -113,7 +113,12 @@ func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageR
 		}
 		return userMessage, assistantMessage, nil
 	}
-	activeMemories, _ := u.store.ListActiveMemories(ctx, userID, 5)
+	embeddingReply, embeddingErr := u.models.Embed(ctx, []string{content})
+	var queryEmbedding []float32
+	if embeddingErr == nil && len(embeddingReply.Data) > 0 {
+		queryEmbedding = embeddingReply.Data[0].Embedding
+	}
+	activeMemories, _ := u.store.ListRelevantMemories(ctx, userID, queryEmbedding, 5)
 	modelRequest := &modelv1.ChatCompletionRequest{Messages: BuildChatMessages(history, activeMemories, content), MaxTokens: companionMaxTokens}
 	response, err := u.models.Chat(ctx, modelRequest)
 	if err != nil {
@@ -127,6 +132,32 @@ func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageR
 		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
 	}
 	return userMessage, assistantMessage, nil
+}
+
+func (u *CompanionUsecase) SendAudioMessage(ctx context.Context, req *v1.SendAudioMessageRequest) (*data.MessageModel, *data.MessageModel, []byte, string, error) {
+	if req == nil || len(req.AudioData) == 0 || strings.TrimSpace(req.ConversationId) == "" {
+		return nil, nil, nil, "", fmt.Errorf("conversation_id and audio data are required")
+	}
+	transcription, err := u.models.TranscribeAudio(ctx, &modelv1.TranscribeAudioRequest{AudioData: req.AudioData, Filename: req.Filename, ContentType: req.ContentType, Language: req.Language})
+	if err != nil {
+		return nil, nil, nil, "", fmt.Errorf("transcribe audio: %w", err)
+	}
+	content := strings.TrimSpace(transcription.Text)
+	if content == "" {
+		return nil, nil, nil, "", fmt.Errorf("transcription returned empty text")
+	}
+	userMessage, assistantMessage, err := u.SendMessage(ctx, &v1.SendMessageRequest{ConversationId: req.ConversationId, Content: content})
+	if err != nil {
+		return userMessage, assistantMessage, nil, "", err
+	}
+	if !req.Synthesize {
+		return userMessage, assistantMessage, nil, "", nil
+	}
+	speech, err := u.models.SynthesizeSpeech(ctx, &modelv1.SynthesizeSpeechRequest{Text: assistantMessage.Content, Voice: req.Voice})
+	if err != nil {
+		return userMessage, assistantMessage, nil, "", fmt.Errorf("synthesize speech: %w", err)
+	}
+	return userMessage, assistantMessage, speech.AudioData, speech.ContentType, nil
 }
 
 func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMessageRequest, emit func(*v1.MessageChunk) error) error {
@@ -162,7 +193,12 @@ func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMe
 		}
 		return emit(&v1.MessageChunk{MessageId: assistantMessage.MessageID, Delta: assistantMessage.Content, FinishReason: "safety", Done: true})
 	}
-	activeMemories, _ := u.store.ListActiveMemories(ctx, userID, 5)
+	embeddingReply, embeddingErr := u.models.Embed(ctx, []string{content})
+	var queryEmbedding []float32
+	if embeddingErr == nil && len(embeddingReply.Data) > 0 {
+		queryEmbedding = embeddingReply.Data[0].Embedding
+	}
+	activeMemories, _ := u.store.ListRelevantMemories(ctx, userID, queryEmbedding, 5)
 	stream, err := u.models.ChatStream(ctx, &modelv1.ChatCompletionRequest{Messages: BuildChatMessages(history, activeMemories, content), MaxTokens: companionMaxTokens, Stream: true})
 	if err != nil {
 		if ctx.Err() != nil {

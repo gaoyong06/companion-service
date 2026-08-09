@@ -1135,6 +1135,257 @@ var _ interface {
 	ErrorName() string
 } = SendMessageReplyValidationError{}
 
+// Validate checks the field values on SendAudioMessageRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SendAudioMessageRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SendAudioMessageRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SendAudioMessageRequestMultiError, or nil if none found.
+func (m *SendAudioMessageRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SendAudioMessageRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	// no validation rules for AudioData
+
+	// no validation rules for Filename
+
+	// no validation rules for ContentType
+
+	// no validation rules for Language
+
+	// no validation rules for Voice
+
+	// no validation rules for Synthesize
+
+	if len(errors) > 0 {
+		return SendAudioMessageRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SendAudioMessageRequestMultiError is an error wrapping multiple validation
+// errors returned by SendAudioMessageRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SendAudioMessageRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SendAudioMessageRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SendAudioMessageRequestMultiError) AllErrors() []error { return m }
+
+// SendAudioMessageRequestValidationError is the validation error returned by
+// SendAudioMessageRequest.Validate if the designated constraints aren't met.
+type SendAudioMessageRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SendAudioMessageRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SendAudioMessageRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SendAudioMessageRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SendAudioMessageRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SendAudioMessageRequestValidationError) ErrorName() string {
+	return "SendAudioMessageRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SendAudioMessageRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSendAudioMessageRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SendAudioMessageRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SendAudioMessageRequestValidationError{}
+
+// Validate checks the field values on SendAudioMessageReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SendAudioMessageReply) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SendAudioMessageReply with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SendAudioMessageReplyMultiError, or nil if none found.
+func (m *SendAudioMessageReply) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SendAudioMessageReply) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetMessage()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SendAudioMessageReplyValidationError{
+					field:  "Message",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SendAudioMessageReplyValidationError{
+					field:  "Message",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMessage()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SendAudioMessageReplyValidationError{
+				field:  "Message",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for AudioData
+
+	// no validation rules for AudioContentType
+
+	if len(errors) > 0 {
+		return SendAudioMessageReplyMultiError(errors)
+	}
+
+	return nil
+}
+
+// SendAudioMessageReplyMultiError is an error wrapping multiple validation
+// errors returned by SendAudioMessageReply.ValidateAll() if the designated
+// constraints aren't met.
+type SendAudioMessageReplyMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SendAudioMessageReplyMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SendAudioMessageReplyMultiError) AllErrors() []error { return m }
+
+// SendAudioMessageReplyValidationError is the validation error returned by
+// SendAudioMessageReply.Validate if the designated constraints aren't met.
+type SendAudioMessageReplyValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SendAudioMessageReplyValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SendAudioMessageReplyValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SendAudioMessageReplyValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SendAudioMessageReplyValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SendAudioMessageReplyValidationError) ErrorName() string {
+	return "SendAudioMessageReplyValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SendAudioMessageReplyValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSendAudioMessageReply.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SendAudioMessageReplyValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SendAudioMessageReplyValidationError{}
+
 // Validate checks the field values on MessageChunk with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

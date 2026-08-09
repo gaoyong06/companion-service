@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,47 +13,73 @@ import (
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var ErrNotFound = gorm.ErrRecordNotFound
 
 type ConversationModel struct {
-	ConversationID string    `gorm:"primaryKey;size:64"`
-	UserID         string    `gorm:"index;size:64;not null"`
-	CompanionID    string    `gorm:"size:64;not null"`
-	Status         string    `gorm:"size:16;not null;index"`
-	Summary        string    `gorm:"type:text"`
-	CreatedAt      time.Time `gorm:"not null"`
-	UpdatedAt      time.Time `gorm:"not null"`
+	// 会话唯一标识，由服务端生成，通常使用 conv_ 前缀。
+	ConversationID string `gorm:"primaryKey;size:64"`
+	// 所属用户唯一标识，用于数据隔离、权限校验和用户级删除。
+	UserID string `gorm:"index;size:64;not null"`
+	// 陪伴角色唯一标识，当前默认值为 default。
+	CompanionID string `gorm:"size:64;not null"`
+	// 会话状态，当前使用 active 和 closed。
+	Status string `gorm:"size:16;not null;index"`
+	// 会话摘要，关闭会话时由模型生成。
+	Summary string `gorm:"type:text"`
+	// 会话创建时间，使用 UTC 时间。
+	CreatedAt time.Time `gorm:"not null"`
+	// 会话最后更新时间，新消息写入或会话关闭时更新。
+	UpdatedAt time.Time `gorm:"not null"`
 }
 
 func (ConversationModel) TableName() string { return "companion_conversation" }
 
 type MessageModel struct {
-	MessageID      string    `gorm:"primaryKey;size:64"`
-	ConversationID string    `gorm:"index;size:64;not null"`
-	UserID         string    `gorm:"index;size:64;not null"`
-	Role           string    `gorm:"size:16;not null"`
-	Content        string    `gorm:"type:text;not null"`
-	CreatedAt      time.Time `gorm:"not null;index"`
+	// 消息唯一标识，由服务端生成，通常使用 msg_ 前缀。
+	MessageID string `gorm:"primaryKey;size:64"`
+	// 所属会话唯一标识。
+	ConversationID string `gorm:"index;size:64;not null"`
+	// 所属用户唯一标识，冗余保存以支持用户范围查询和删除。
+	UserID string `gorm:"index;size:64;not null"`
+	// 消息角色，当前使用 user、assistant 和 system。
+	Role string `gorm:"size:16;not null"`
+	// 消息正文，保存用户输入或模型生成的 UTF-8 文本。
+	Content string `gorm:"type:text;not null"`
+	// 消息创建时间，使用 UTC 时间。
+	CreatedAt time.Time `gorm:"not null;index"`
 }
 
 func (MessageModel) TableName() string { return "companion_message" }
 
 type MemoryModel struct {
-	MemoryID        string    `gorm:"primaryKey;size:64"`
-	UserID          string    `gorm:"index;size:64;not null"`
-	Layer           string    `gorm:"size:16;not null"`
-	Kind            string    `gorm:"size:32;not null"`
-	Content         string    `gorm:"type:text;not null"`
-	SourceMessageID string    `gorm:"index;size:64;not null"`
-	Confidence      float64   `gorm:"not null"`
-	Importance      int32     `gorm:"not null"`
-	Status          string    `gorm:"size:16;not null;index"`
-	CreatedAt       time.Time `gorm:"not null"`
-	UpdatedAt       time.Time `gorm:"not null"`
+	// 记忆唯一标识，由服务端生成，通常使用 mem_ 前缀。
+	MemoryID string `gorm:"primaryKey;size:64"`
+	// 所属用户唯一标识，记忆只能在该用户的上下文中召回。
+	UserID string `gorm:"index;size:64;not null"`
+	// 记忆层级，当前使用 L1。
+	Layer string `gorm:"size:16;not null"`
+	// 记忆类型，当前支持 preference、fact 和 goal。
+	Kind string `gorm:"size:32;not null"`
+	// 记忆正文，不得保存密码、令牌、银行卡等敏感信息。
+	Content string `gorm:"type:text;not null"`
+	// 产生该记忆的源消息唯一标识，用于反馈纠正和生命周期追踪。
+	SourceMessageID string `gorm:"index;size:64;not null"`
+	// 模型对记忆内容正确性的置信度，范围为 0.0 至 1.0。
+	Confidence float64 `gorm:"not null"`
+	// 记忆重要性评分，当前为 1 至 5 的整数。
+	Importance int32 `gorm:"not null"`
+	// 记忆状态，当前使用 active 和 deleted。
+	Status string `gorm:"size:16;not null;index"`
+	// 记忆首次创建时间，使用 UTC 时间。
+	CreatedAt time.Time `gorm:"not null"`
+	// 记忆最后更新时间，使用 UTC 时间。
+	UpdatedAt time.Time `gorm:"not null"`
+	// Embedding 是用于向量召回的临时向量，不直接由 GORM 自动持久化。
+	Embedding []float32 `gorm:"-"`
 }
 
 func (MemoryModel) TableName() string { return "companion_memory" }
@@ -66,7 +93,7 @@ func NewStore(c *conf.Data, logger log.Logger) (*Store, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	db, err := gorm.Open(mysql.Open(source), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(source), &gorm.Config{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("open database: %w", err)
 	}
@@ -98,20 +125,20 @@ func (s *Store) CreateConversation(ctx context.Context, model *ConversationModel
 	return s.db.WithContext(ctx).Create(model).Error
 }
 
-func (s *Store) GetConversation(ctx context.Context, id, userID string) (*ConversationModel, error) {
+func (s *Store) GetConversation(ctx context.Context, conversationID, userID string) (*ConversationModel, error) {
 	var model ConversationModel
-	err := s.db.WithContext(ctx).Where("conversation_id = ? AND user_id = ?", id, userID).First(&model).Error
+	err := s.db.WithContext(ctx).Where("conversation_id = ? AND user_id = ?", conversationID, userID).First(&model).Error
 	return &model, err
 }
 
-func (s *Store) CloseConversation(ctx context.Context, id, userID, summary string, updatedAt time.Time) (*ConversationModel, error) {
+func (s *Store) CloseConversation(ctx context.Context, conversationID, userID, summary string, updatedAt time.Time) (*ConversationModel, error) {
 	result := s.db.WithContext(ctx).Model(&ConversationModel{}).
-		Where("conversation_id = ? AND user_id = ? AND status = ?", id, userID, "active").
+		Where("conversation_id = ? AND user_id = ? AND status = ?", conversationID, userID, "active").
 		Updates(map[string]interface{}{"status": "closed", "summary": summary, "updated_at": updatedAt})
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return s.GetConversation(ctx, id, userID)
+	return s.GetConversation(ctx, conversationID, userID)
 }
 
 func (s *Store) ListConversations(ctx context.Context, userID string, limit int) ([]ConversationModel, error) {
@@ -140,6 +167,26 @@ func (s *Store) ListActiveMemories(ctx context.Context, userID string, limit int
 	return rows, err
 }
 
+// ListRelevantMemories 按余弦距离召回用户的高相关记忆；没有向量时退化为重要性排序。
+func (s *Store) ListRelevantMemories(ctx context.Context, userID string, embedding []float32, limit int) ([]MemoryModel, error) {
+	if len(embedding) == 0 {
+		return s.ListActiveMemories(ctx, userID, limit)
+	}
+	if limit <= 0 || limit > 20 {
+		limit = 5
+	}
+	vector := formatVector(embedding)
+	var rows []MemoryModel
+	err := s.db.WithContext(ctx).Raw(`
+		SELECT memory_id, user_id, layer, kind, content, source_message_id,
+		       confidence, importance, status, created_at, updated_at
+		FROM companion_memory
+		WHERE user_id = ? AND status = 'active' AND embedding IS NOT NULL
+		ORDER BY embedding <=> ?::vector, importance DESC, updated_at DESC
+		LIMIT ?`, userID, vector, limit).Scan(&rows).Error
+	return rows, err
+}
+
 func (s *Store) ExportUserData(ctx context.Context, userID string) ([]ConversationModel, []MessageModel, []MemoryModel, error) {
 	var conversations []ConversationModel
 	if err := s.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at ASC").Find(&conversations).Error; err != nil {
@@ -162,17 +209,38 @@ func (s *Store) SaveMemory(ctx context.Context, model *MemoryModel) error {
 		Where("user_id = ? AND kind = ? AND content = ? AND status = ?", model.UserID, model.Kind, model.Content, "active").
 		First(&existing).Error
 	if err == nil {
-		return s.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
+		if updateErr := s.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
 			"source_message_id": model.SourceMessageID,
 			"confidence":        model.Confidence,
 			"importance":        model.Importance,
 			"updated_at":        model.UpdatedAt,
-		}).Error
+		}).Error; updateErr != nil {
+			return updateErr
+		}
+		return s.saveMemoryEmbedding(ctx, existing.MemoryID, model.Embedding)
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	return s.db.WithContext(ctx).Create(model).Error
+	if err := s.db.WithContext(ctx).Omit("Embedding").Create(model).Error; err != nil {
+		return err
+	}
+	return s.saveMemoryEmbedding(ctx, model.MemoryID, model.Embedding)
+}
+
+func (s *Store) saveMemoryEmbedding(ctx context.Context, memoryID string, embedding []float32) error {
+	if len(embedding) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).Exec("UPDATE companion_memory SET embedding = ?::vector WHERE memory_id = ?", formatVector(embedding), memoryID).Error
+}
+
+func formatVector(embedding []float32) string {
+	values := make([]string, len(embedding))
+	for index, value := range embedding {
+		values[index] = strconv.FormatFloat(float64(value), 'f', -1, 32)
+	}
+	return "[" + strings.Join(values, ",") + "]"
 }
 
 func (s *Store) DeleteMemoriesBySource(ctx context.Context, userID, sourceMessageID string) error {

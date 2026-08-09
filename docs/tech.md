@@ -70,10 +70,12 @@ Infrastructure Layer
 
 当前 0.1 实现边界如下：
 
-- `companion-service` 已实现创建会话、查询会话、保存消息和非流式 Chat 调用。
-- `model-gateway` 已实现 OpenAI-compatible Chat、Embedding 和模型列表。
-- MySQL 持久化覆盖会话、消息和 L1 记忆；当前记忆使用异步候选抽取和有限召回，分层记忆、向量召回、STT 和 TTS 属于后续迭代。
-- 服务内部仍按接口隔离，记忆任务已在 `companion-service` 内异步执行，再根据独立扩缩容需求拆分。
+- `companion-service` 已实现创建会话、文本/音频消息、流式回复、语义记忆召回和数据治理。
+- `model-gateway` 已实现 OpenAI-compatible Chat、Embedding、STT、TTS 和模型列表。
+- PostgreSQL + pgvector 持久化会话、消息、L1 记忆及其向量；生产记忆任务通过 RocketMQ，debug 配置可显式关闭队列使用进程内处理。
+- 供应商 API Key 只保留在 `model-gateway`，业务服务只持有内部网关 Key。
+
+生产环境的 `queue.driver=rocketmq` 使用 `companion_memory_extract` topic 和独立 producer/consumer group；消费失败由 RocketMQ 重试并进入该消费组的 DLQ。debug 配置将 `queue.enabled` 设为 `false`，只用于本地验证，不代表生产可以省略 RocketMQ。
 
 后续可以按负载和数据隔离需求拆分：
 
@@ -115,91 +117,123 @@ STT、LLM 和 TTS 均通过 Model Gateway 访问。业务模块不得直接依�
 
 ## 5. 领域模型
 
+领域实体不使用含义不明确的裸字段 `id`。所有由 `companion-service` 生成和管理的标识，都使用 `<实体名>_id` 命名，并在服务内保持唯一；关联字段必须明确表达被关联的实体，例如 `conversation_id`、`message_id` 和 `memory_id`。
+
 ### 5.1 Conversation
+
+当前实现对应 `internal/data.ConversationModel` 和 `companion_conversation` 表。
 
 ```text
 Conversation
-- id
-- user_id
-- companion_id
-- status: active | closed | archived | deleting
-- summary
-- summary_version
-- last_message_at
-- created_at
-- closed_at
+- conversation_id: 会话唯一标识，由 companion-service 生成，通常使用 conv_ 前缀。
+- user_id: 所属用户唯一标识，用于数据隔离、权限校验和用户级删除。
+- companion_id: 陪伴角色唯一标识，当前默认值为 default。
+- status: 会话状态；当前使用 active 和 closed，未来可扩展 archived、deleting。
+- summary: 会话摘要；关闭会话时由模型生成，用于保留长期上下文和未解决事项。
+- created_at: 会话创建时间，使用 UTC 时间。
+- updated_at: 会话最后更新时间；新消息写入或会话关闭时更新。
+```
+
+以下字段属于后续扩展设计，当前未在 Go 模型和 SQL 中实现：
+
+```text
+- summary_version: 摘要版本号，用于摘要重建和并发更新控制。
+- last_message_at: 最后一条消息的业务时间；当前使用 updated_at 代替。
+- closed_at: 会话实际关闭时间；当前未单独保存。
 ```
 
 ### 5.2 Message
 
+当前实现对应 `internal/data.MessageModel` 和 `companion_message` 表。
+
 ```text
 Message
-- id
-- conversation_id
-- user_id
-- role: user | assistant | system
-- modality: text | audio | transcription
-- content_ref
-- content_hash
-- token_count
-- safety_level
-- created_at
+- message_id: 消息唯一标识，由 companion-service 生成，通常使用 msg_ 前缀。
+- conversation_id: 所属会话唯一标识，必须关联已存在的 Conversation。
+- user_id: 所属用户唯一标识；冗余保存以支持用户范围查询和删除。
+- role: 消息角色；user 表示用户消息，assistant 表示陪伴回复，system 仅用于模型上下文。
+- content: 消息正文，保存用户输入或模型生成的 UTF-8 文本。
+- created_at: 消息创建时间，使用 UTC 时间。
 ```
 
-原始音频和长文本通过 `content_ref` 指向对象存储，数据库只保存必要元数据和完整性校验值。
+以下字段属于后续语音和可观测性设计，当前未在 Go 模型和 SQL 中实现：
+
+```text
+- modality: 消息载体类型；计划支持 text、audio、transcription。
+- content_ref: 对象存储引用，用于保存原始音频或超长内容。
+- content_hash: 内容完整性校验值，用于去重和审计。
+- token_count: 本条消息对应的模型 token 数量，用于成本和上下文统计。
+- safety_level: 消息安全等级，用于安全策略和审计。
+```
 
 ### 5.3 Memory
 
+当前实现对应 `internal/data.MemoryModel` 和 `companion_memory` 表。
+
 ```text
 Memory
-- id
-- user_id
-- layer: L1 | L2 | L3 | R
-- type
-- content
-- normalized_content
-- confidence
-- importance
-- sensitivity
-- status: candidate | active | rejected | expired | deleted
-- source_message_ids
-- source_scenario_ids
-- first_seen_at
-- last_confirmed_at
-- expires_at
-- version
+- memory_id: 记忆唯一标识，由 companion-service 生成，通常使用 mem_ 前缀。
+- user_id: 所属用户唯一标识；记忆只能在该用户的上下文中召回。
+- layer: 记忆层级；当前使用 L1，表示从单条消息中抽取的原子记忆。
+- kind: 记忆类型；当前支持 preference、fact、goal。
+- content: 记忆正文；不得保存密码、令牌、银行卡等敏感信息。
+- source_message_id: 产生该记忆的源消息唯一标识，用于反馈纠正、忘记和生命周期追踪。
+- confidence: 模型对记忆内容正确性的置信度，范围为 0.0 至 1.0。
+- importance: 记忆重要性评分，当前为 1 至 5 的整数，数值越大越优先召回。
+- status: 记忆状态；当前使用 active 和 deleted。
+- created_at: 记忆首次创建时间，使用 UTC 时间。
+- updated_at: 记忆最后更新时间，使用 UTC 时间。
 ```
 
-Memory 必须是版本化实体。更新使用新版本或事件记录，不能无审计地覆盖原记录。
+以下字段属于分层记忆的后续设计，当前未在 Go 模型和 SQL 中实现：
+
+```text
+- normalized_content: 规范化后的记忆正文，用于去重和冲突判断。
+- sensitivity: 敏感级别，用于决定是否需要用户确认。
+- source_message_ids: 多条来源消息标识；当前使用单个 source_message_id。
+- source_scenario_ids: 来源场景记忆标识；当前没有 Scenario 模型。
+- first_seen_at: 首次观察时间；当前使用 created_at 代替。
+- last_confirmed_at: 最近确认时间；当前使用 updated_at 代替。
+- expires_at: 记忆过期时间；当前没有自动过期任务。
+- version: 记忆版本号；当前通过 updated_at 更新同一条记录。
+```
+
+Memory 长期演进时必须成为版本化实体；当前实现仍使用单条记录更新，不能将当前实现误认为已具备完整版本审计能力。
 
 ### 5.4 Consent
 
+Consent 当前只有产品和技术设计，没有对应的 Go 模型、SQL 表或 API。
+
 ```text
 Consent
-- user_id
-- memory_mode: cautious | normal | disabled
-- allow_sensitive_memory
-- allow_proactive_contact
-- proactive_time_window
-- allow_voice_storage
-- updated_at
+- consent_id: 用户授权记录唯一标识，未来由 companion-service 生成。
+- user_id: 授权所属用户唯一标识。
+- memory_mode: 长期记忆模式；cautious 表示谨慎记忆，normal 表示正常记忆，disabled 表示关闭。
+- allow_sensitive_memory: 是否允许保存需要确认的敏感记忆。
+- allow_proactive_contact: 是否允许主动联系用户。
+- proactive_time_window: 允许主动联系的时间窗口。
+- allow_voice_storage: 是否允许保存原始语音。
+- updated_at: 授权配置最后更新时间，使用 UTC 时间。
 ```
 
 Consent 变更必须产生事件，并影响后续写入、召回和异步任务。
 
 ### 5.5 RelationshipState
 
+RelationshipState 当前只有产品和技术设计，没有对应的 Go 模型、SQL 表或 API。
+
 ```text
 RelationshipState
-- user_id
-- stage: new | familiar | established
-- preferred_tone
-- preferred_address
-- current_mode: listening | advice | planning | casual
-- recent_emotional_context
-- unresolved_topics
-- last_confirmed_at
-- version
+- relationship_state_id: 关系状态记录唯一标识，未来由 companion-service 生成。
+- user_id: 关系状态所属用户唯一标识。
+- stage: 关系阶段；new 表示初次认识，familiar 表示熟悉，established 表示稳定互动。
+- preferred_tone: 用户偏好的交流语气。
+- preferred_address: Companion 对用户的称呼。
+- current_mode: 当前互动模式；listening、advice、planning 或 casual。
+- recent_emotional_context: 最近一次确认的情绪上下文摘要。
+- unresolved_topics: 尚未解决或待跟进的话题摘要。
+- last_confirmed_at: 用户最近确认关系状态的时间，使用 UTC 时间。
+- version: 关系状态版本号，用于并发更新控制。
 ```
 
 RelationshipState 只表达可观察和可配置的交互策略，不表达 AI 的主观情感或占有关系。
@@ -210,32 +244,31 @@ RelationshipState 只表达可观察和可配置的交互策略，不表达 AI �
 
 | 数据 | 存储 | 原因 |
 | --- | --- | --- |
-| 会话、消息、L1 记忆 | MySQL | 当前代码使用 GORM MySQL 驱动；表结构见 `docs/sql/companion-service.sql` |
+| 会话、消息、L1 记忆和向量 | PostgreSQL + pgvector | 当前代码使用 GORM PostgreSQL 驱动；记忆向量使用 1536 维 cosine 检索 |
 | 模型调用配置 | 环境变量和 YAML | `model-gateway` 当前无状态，不落库 |
-| Embedding、STT、TTS | 当前未持久化 | 供应商调用通过 `model-gateway` 转发 |
+| Embedding | `companion_memory.embedding` | 通过 `model-gateway` 生成并在 PostgreSQL 中做向量召回 |
+| STT、TTS 音频 | 请求生命周期内传输 | 供应商调用通过 `model-gateway` 转发；原始音频持久化仍由后续 `asset-service` 调用方决定 |
 
 TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机部署。生产环境应保留 Repository 接口，避免业务层绑定具体存储实现。
 
 ### 6.2 当前数据库和建库入口
 
-- 当前只需要创建一个 MySQL 数据库：`companion-service`。
+- 当前只需要创建一个 PostgreSQL 数据库：`companion_service`，并启用 `vector` 扩展。
 - `model-gateway` 不需要创建数据库。
 - 建库、连接参数和手动执行方式见 `docs/database.md`。
-- 当前 SQL 只创建 `companion_conversation`、`companion_message` 和 `companion_memory` 三张表。
+- 当前 SQL 创建 `companion_conversation`、`companion_message` 和 `companion_memory` 三张表，其中记忆表包含 1536 维向量列和 HNSW 索引。
 
-### 6.3 未来演进方案（尚未实现）
+### 6.3 未进入当前版本的演进方案
 
 以下方案属于后续能力的候选设计，不能作为当前部署前置条件：
 
 | 数据 | 候选存储 | 触发条件 |
 | --- | --- | --- |
 | L2/L3/R 版本化记忆 | PostgreSQL JSONB + 普通列 | 分层记忆和版本审计进入开发 |
-| Embedding | PostgreSQL + pgvector 或独立 Vector Store | 向量召回进入开发 |
 | 原始音频和大文本 | 对象存储 | 语音和大内容持久化进入开发 |
-| 异步任务 | 可靠队列 | 任务量和独立重试需求超过进程内队列能力 |
 | 热门会话状态 | Redis，可选 | 监测证明缓存能降低实际延迟 |
 
-在这些能力实现之前，不创建 PostgreSQL、pgvector、Redis 或队列资源，也不提前编写没有调用方的表。
+当前已经创建并使用 PostgreSQL、pgvector；生产配置使用 RocketMQ。Redis 和 OSS 只有在对应持久化调用方合入后才增加资源。
 
 ### 6.4 当前索引
 
@@ -244,8 +277,9 @@ TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机
 - `companion_message(user_id, created_at)`
 - `companion_memory(user_id, status, importance, updated_at)`
 - `companion_memory(source_message_id)`
+- `companion_memory.embedding` 的 HNSW cosine 索引
 
-向量索引、`memory_sources` 表和按层级的 PostgreSQL 索引均属于未来设计，当前不存在。
+`memory_sources` 表和按层级的 PostgreSQL 索引属于未来设计，当前不存在。
 
 ## 7. 记忆流水线
 

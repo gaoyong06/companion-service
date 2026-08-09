@@ -77,6 +77,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /companion/v1/conversations/{conversationId}/audio-messages:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_SendAudioMessage
+            parameters:
+                - name: conversationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendAudioMessageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SendAudioMessageReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /companion/v1/conversations/{conversationId}/close:
         post:
             tags:
@@ -336,6 +366,34 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        SendAudioMessageReply:
+            type: object
+            properties:
+                message:
+                    $ref: '#/components/schemas/SendMessageReply'
+                audioData:
+                    type: string
+                    format: bytes
+                audioContentType:
+                    type: string
+        SendAudioMessageRequest:
+            type: object
+            properties:
+                conversationId:
+                    type: string
+                audioData:
+                    type: string
+                    format: bytes
+                filename:
+                    type: string
+                contentType:
+                    type: string
+                language:
+                    type: string
+                voice:
+                    type: string
+                synthesize:
+                    type: boolean
         SendMessageReply:
             type: object
             properties:

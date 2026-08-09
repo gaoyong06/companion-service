@@ -19,6 +19,14 @@ model_gateway:
 memory:
   enabled: true
   queue_size: 100
+  embedding_dimension: 1536
+queue:
+  enabled: true
+  driver: rocketmq
+  name_servers:
+    - rocketmq-namesrv:9876
+  group_name: companion_memory
+  topic: companion_memory_extract
 log:
   level: info
   format: json

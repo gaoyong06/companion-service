@@ -12,6 +12,7 @@ message Bootstrap {
   ModelGateway model_gateway = 3;
   Log log = 4;
   Memory memory = 5;
+  Queue queue = 6;
 }
 
 message Server {
@@ -51,6 +52,17 @@ message ModelGateway {
 message Memory {
   bool enabled = 1;
   int32 queue_size = 2;
+  int32 embedding_dimension = 3;
+}
+
+message Queue {
+  bool enabled = 1;
+  string driver = 2;
+  repeated string name_servers = 3;
+  string access_key = 4;
+  string secret_key = 5;
+  string group_name = 6;
+  string topic = 7;
 }
 
 message Log {

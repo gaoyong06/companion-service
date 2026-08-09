@@ -37,4 +37,11 @@ func NewMemoryConfig(b *Bootstrap) *Memory {
 	return b.Memory
 }
 
-var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig, NewMemoryConfig)
+func NewQueueConfig(b *Bootstrap) *Queue {
+	if b == nil {
+		return nil
+	}
+	return b.Queue
+}
+
+var ProviderSet = wire.NewSet(NewHTTPConfig, NewGRPCConfig, NewDataConfig, NewModelGatewayConfig, NewMemoryConfig, NewQueueConfig)

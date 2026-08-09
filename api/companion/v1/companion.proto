@@ -35,6 +35,13 @@ service Companion {
 
   rpc SendMessageStream(SendMessageRequest) returns (stream MessageChunk);
 
+  rpc SendAudioMessage(SendAudioMessageRequest) returns (SendAudioMessageReply) {
+    option (google.api.http) = {
+      post: "/companion/v1/conversations/{conversation_id}/audio-messages"
+      body: "*"
+    };
+  }
+
   rpc SubmitMemoryFeedback(MemoryFeedbackRequest) returns (MemoryFeedbackReply) {
     option (google.api.http) = {
       post: "/companion/v1/conversations/{conversation_id}/memory-feedback"
@@ -110,6 +117,22 @@ message ConversationListReply {
 message SendMessageReply {
   ConversationMessage user_message = 1;
   ConversationMessage assistant_message = 2;
+}
+
+message SendAudioMessageRequest {
+  string conversation_id = 1;
+  bytes audio_data = 2;
+  string filename = 3;
+  string content_type = 4;
+  string language = 5;
+  string voice = 6;
+  bool synthesize = 7;
+}
+
+message SendAudioMessageReply {
+  SendMessageReply message = 1;
+  bytes audio_data = 2;
+  string audio_content_type = 3;
 }
 
 message MessageChunk {

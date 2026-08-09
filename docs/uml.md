@@ -90,7 +90,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Queue as Job Queue
+    participant Queue as RocketMQ
     participant Extractor as Candidate Extractor
     participant Classifier as Sensitivity Classifier
     participant Dedup as Deduplicator
@@ -171,30 +171,25 @@ flowchart TD
 sequenceDiagram
     autonumber
     actor User as 用户
-    participant App as Mobile App
-    participant Voice as Voice Orchestrator
-    participant STT as Speech To Text
-    participant Chat as Conversation Orchestrator
+    participant App as Web/Mobile App
+    participant Companion as Companion API
     participant Model as Model Gateway
-    participant TTS as Text To Speech
+    participant STT as STT Provider
+    participant TTS as TTS Provider
 
     User->>App: 按住说话
-    App->>Voice: 上传音频片段
+    App->>Companion: SendAudioMessage(audio_data)
     User->>App: 松开
-    Voice->>STT: 转写音频
-    STT-->>Voice: transcription
-    Voice->>Chat: 提交 transcription
-    Chat->>Model: 请求流式回复
-    loop text chunks
-        Model-->>Voice: text chunk
-        Voice->>TTS: 合成音频片段
-        TTS-->>App: audio chunk
-        App-->>User: 播放语音
-    end
-    User->>App: 点击停止
-    App->>Voice: interrupt
-    Voice->>Model: cancel generation
-    Voice-->>App: interrupted
+    Companion->>Model: TranscribeAudio
+    Model->>STT: POST /v1/audio/transcriptions
+    STT-->>Model: transcription
+    Companion->>Model: ChatCompletion(transcription)
+    Model-->>Companion: assistant text
+    Companion->>Model: SynthesizeSpeech(assistant text)
+    Model->>TTS: POST /v1/audio/speech
+    TTS-->>Model: audio bytes
+    Companion-->>App: text messages + audio bytes
+    App-->>User: 播放语音
 ```
 
 ## 8. 图之间的关系

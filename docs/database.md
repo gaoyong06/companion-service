@@ -1,16 +1,16 @@
 # 数据库说明
 
 > 文档状态：Current MVP
-> 更新日期：2026-08-08
+> 更新日期：2026-08-09
 
 ## 1. 数据库清单
 
 | 服务 | 数据库 | 当前用途 | 是否需要手动建库 |
 | --- | --- | --- | --- |
-| `companion-service` | MySQL 8.x（兼容 MySQL 5.7 的基础语法） | 会话、消息、L1 记忆持久化 | 是 |
+| `companion-service` | PostgreSQL 15+ + pgvector | 会话、消息、L1 记忆和向量召回 | 是 |
 | `model-gateway` | 无 | 无状态转发 Chat、Embedding 和模型列表请求 | 否 |
 
-当前版本没有启用 PostgreSQL、pgvector、Redis、对象存储或消息队列。它们只出现在技术规划中，尚未接入代码、配置或 SQL 表结构。
+当前版本使用 PostgreSQL + pgvector；生产环境的记忆任务还依赖 RocketMQ。Redis 和对象存储仍未作为启动前置条件。
 
 ## 2. companion-service
 
@@ -19,42 +19,41 @@
 Debug 配置默认连接：
 
 ```text
-root:root@tcp(127.0.0.1:3306)/companion-service?charset=utf8mb4&parseTime=True&loc=Local
+postgres://postgres:postgres@127.0.0.1:5432/companion_service?sslmode=disable
 ```
 
 Release 配置从环境变量 `COMPANION_DATABASE_DSN` 读取完整 DSN，例如：
 
 ```bash
-export COMPANION_DATABASE_DSN='app_user:strong-password@tcp(mysql:3306)/companion-service?charset=utf8mb4&parseTime=True&loc=UTC'
+export COMPANION_DATABASE_DSN='postgres://companion_app:strong-password@postgres:5432/companion_service?sslmode=require'
 ```
 
-连接使用 GORM MySQL 驱动，代码入口为 `internal/data/conversation.go`。服务启动时不会自动创建数据库，也不会自动迁移表结构。
+连接使用 GORM PostgreSQL 驱动，代码入口为 `internal/data/conversation.go`。服务启动时不会自动创建数据库，也不会自动迁移表结构。
 
 ### 2.2 手动创建数据库
 
-先用具有建库权限的 MySQL 账号执行：
+先用具有建库权限的 PostgreSQL 账号执行：
 
 ```sql
-CREATE DATABASE IF NOT EXISTS `companion-service`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE companion_service;
+\c companion_service
+CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
 然后选择数据库并执行表结构：
 
 ```sql
-USE `companion-service`;
-SOURCE /Users/gaoyong/Documents/work/xinyuan_tech/companion-service/docs/sql/companion-service.sql;
+\i /Users/gaoyong/Documents/work/xinyuan_tech/companion-service/docs/sql/companion-service.sql
 ```
 
-也可以在 MySQL 客户端中直接打开并执行：
+也可以使用 `psql` 直接执行：
 
 ```bash
-mysql -h 127.0.0.1 -u root -p 'companion-service' \
-  < /Users/gaoyong/Documents/work/xinyuan_tech/companion-service/docs/sql/companion-service.sql
+psql "$COMPANION_DATABASE_DSN" \
+  -f /Users/gaoyong/Documents/work/xinyuan_tech/companion-service/docs/sql/companion-service.sql
 ```
 
-如果数据库尚未创建，需要先执行上面的 `CREATE DATABASE`。
+如果数据库尚未创建，需要先执行上面的 `CREATE DATABASE`；数据库角色必须拥有 `vector` 扩展和表的创建权限。
 
 ### 2.3 当前表
 
@@ -87,11 +86,4 @@ mysql -h 127.0.0.1 -u root -p 'companion-service' \
 
 ## 4. PostgreSQL 说明
 
-`companion-service/docs/tech.md` 原先将 PostgreSQL、JSONB 和 pgvector 写在 MVP 推荐表中，这描述的是生产演进方向，不是当前实现。当前版本：
-
-- 没有 PostgreSQL 驱动或连接配置。
-- 没有 pgvector 扩展配置。
-- 没有 PostgreSQL DDL 或对应 Repository 实现。
-- 没有 Redis、对象存储或消息队列的运行依赖。
-
-因此本阶段不需要创建 PostgreSQL 数据库。等 L2/L3 记忆、向量召回和异步任务真正进入开发时，再单独评估是否迁移到 PostgreSQL + pgvector，并同步补充迁移脚本和表设计。
+当前 Companion 已使用 PostgreSQL + pgvector 保存记忆向量，并通过 `embedding <=> query::vector` 做 cosine 距离排序。生产配置还使用 RocketMQ 投递记忆任务；L2/L3/R 版本化记忆、Redis 缓存和 OSS 音频对象仍需等对应持久化调用方合入后再增加资源。

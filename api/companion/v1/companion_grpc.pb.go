@@ -24,6 +24,7 @@ const (
 	Companion_ListConversations_FullMethodName    = "/companion.v1.Companion/ListConversations"
 	Companion_SendMessage_FullMethodName          = "/companion.v1.Companion/SendMessage"
 	Companion_SendMessageStream_FullMethodName    = "/companion.v1.Companion/SendMessageStream"
+	Companion_SendAudioMessage_FullMethodName     = "/companion.v1.Companion/SendAudioMessage"
 	Companion_SubmitMemoryFeedback_FullMethodName = "/companion.v1.Companion/SubmitMemoryFeedback"
 	Companion_CloseConversation_FullMethodName    = "/companion.v1.Companion/CloseConversation"
 	Companion_ExportData_FullMethodName           = "/companion.v1.Companion/ExportData"
@@ -39,6 +40,7 @@ type CompanionClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ConversationListReply, error)
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (*SendMessageReply, error)
 	SendMessageStream(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[MessageChunk], error)
+	SendAudioMessage(ctx context.Context, in *SendAudioMessageRequest, opts ...grpc.CallOption) (*SendAudioMessageReply, error)
 	SubmitMemoryFeedback(ctx context.Context, in *MemoryFeedbackRequest, opts ...grpc.CallOption) (*MemoryFeedbackReply, error)
 	CloseConversation(ctx context.Context, in *CloseConversationRequest, opts ...grpc.CallOption) (*ConversationReply, error)
 	ExportData(ctx context.Context, in *ExportDataRequest, opts ...grpc.CallOption) (*ExportDataReply, error)
@@ -112,6 +114,16 @@ func (c *companionClient) SendMessageStream(ctx context.Context, in *SendMessage
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Companion_SendMessageStreamClient = grpc.ServerStreamingClient[MessageChunk]
 
+func (c *companionClient) SendAudioMessage(ctx context.Context, in *SendAudioMessageRequest, opts ...grpc.CallOption) (*SendAudioMessageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendAudioMessageReply)
+	err := c.cc.Invoke(ctx, Companion_SendAudioMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) SubmitMemoryFeedback(ctx context.Context, in *MemoryFeedbackRequest, opts ...grpc.CallOption) (*MemoryFeedbackReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MemoryFeedbackReply)
@@ -161,6 +173,7 @@ type CompanionServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ConversationListReply, error)
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageReply, error)
 	SendMessageStream(*SendMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error
+	SendAudioMessage(context.Context, *SendAudioMessageRequest) (*SendAudioMessageReply, error)
 	SubmitMemoryFeedback(context.Context, *MemoryFeedbackRequest) (*MemoryFeedbackReply, error)
 	CloseConversation(context.Context, *CloseConversationRequest) (*ConversationReply, error)
 	ExportData(context.Context, *ExportDataRequest) (*ExportDataReply, error)
@@ -189,6 +202,9 @@ func (UnimplementedCompanionServer) SendMessage(context.Context, *SendMessageReq
 }
 func (UnimplementedCompanionServer) SendMessageStream(*SendMessageRequest, grpc.ServerStreamingServer[MessageChunk]) error {
 	return status.Error(codes.Unimplemented, "method SendMessageStream not implemented")
+}
+func (UnimplementedCompanionServer) SendAudioMessage(context.Context, *SendAudioMessageRequest) (*SendAudioMessageReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendAudioMessage not implemented")
 }
 func (UnimplementedCompanionServer) SubmitMemoryFeedback(context.Context, *MemoryFeedbackRequest) (*MemoryFeedbackReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitMemoryFeedback not implemented")
@@ -306,6 +322,24 @@ func _Companion_SendMessageStream_Handler(srv interface{}, stream grpc.ServerStr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Companion_SendMessageStreamServer = grpc.ServerStreamingServer[MessageChunk]
 
+func _Companion_SendAudioMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendAudioMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).SendAudioMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_SendAudioMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).SendAudioMessage(ctx, req.(*SendAudioMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_SubmitMemoryFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemoryFeedbackRequest)
 	if err := dec(in); err != nil {
@@ -400,6 +434,10 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendMessage",
 			Handler:    _Companion_SendMessage_Handler,
+		},
+		{
+			MethodName: "SendAudioMessage",
+			Handler:    _Companion_SendAudioMessage_Handler,
 		},
 		{
 			MethodName: "SubmitMemoryFeedback",
