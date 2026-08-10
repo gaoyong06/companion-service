@@ -18,7 +18,7 @@ model_gateway:
   api_key_env: MODEL_GATEWAY_INBOUND_API_KEY
 asset_service:
   grpc_addr: 127.0.0.1:9104
-  timeout: 10m
+  timeout: 600s
   app_id: companion-service
 memory:
   enabled: true
