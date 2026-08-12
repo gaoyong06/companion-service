@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"companion-service/internal/data"
 	"companion-service/internal/memory"
 	"github.com/gaoyong06/go-pkg/middleware/user_id"
+	"github.com/go-kratos/kratos/v2/log"
 	modelv1 "model-gateway/api/model_gateway/v1"
 )
 
@@ -112,12 +114,25 @@ func (s *fakeAssetStorage) Upload(_ context.Context, req *assetv1.UploadFileRequ
 }
 
 type fakeMemoryProcessor struct {
-	jobs      []memory.Job
-	forgotten string
+	jobs       []memory.Job
+	forgotten  string
+	enqueueErr error
 }
 
-func (p *fakeMemoryProcessor) Enqueue(job memory.Job) error { p.jobs = append(p.jobs, job); return nil }
-func (p *fakeMemoryProcessor) ForgetUser(userID string)     { p.forgotten = userID }
+func (p *fakeMemoryProcessor) Enqueue(job memory.Job) error {
+	p.jobs = append(p.jobs, job)
+	return p.enqueueErr
+}
+func (p *fakeMemoryProcessor) ForgetUser(userID string) { p.forgotten = userID }
+
+type captureLogger struct {
+	entries []string
+}
+
+func (l *captureLogger) Log(_ log.Level, keyvals ...any) error {
+	l.entries = append(l.entries, fmt.Sprint(keyvals...))
+	return nil
+}
 
 type fakeChatStream struct {
 	chunks []*modelv1.ChatCompletionChunk
@@ -190,7 +205,7 @@ func newUsecaseFixture() (*CompanionUsecase, *fakeConversationStore, *fakeModelG
 	store := &fakeConversationStore{conversation: &data.ConversationModel{ConversationID: "conv-1", UserID: "user-1", CompanionID: "nana", Status: "active"}, messages: []data.MessageModel{{MessageID: "msg-1", ConversationID: "conv-1", UserID: "user-1", Role: "user", Content: "old"}}}
 	model := &fakeModelGateway{chatReply: &modelv1.ChatCompletionReply{Content: "I hear you."}, embedding: &modelv1.CreateEmbeddingReply{Data: []*modelv1.EmbeddingItem{{Embedding: []float32{0.1, 0.2}}}}, transcription: &modelv1.TranscribeAudioReply{Text: "hello"}, speech: &modelv1.SynthesizeSpeechReply{AudioData: []byte("audio"), ContentType: "audio/mpeg"}}
 	memoryProcessor := &fakeMemoryProcessor{}
-	return NewCompanionUsecase(store, model, nil, memoryProcessor), store, model, memoryProcessor
+	return NewCompanionUsecase(store, model, nil, memoryProcessor, log.NewStdLogger(io.Discard)), store, model, memoryProcessor
 }
 
 func TestConversationUsecaseResolvesTimelineWithoutClientConversationID(t *testing.T) {
@@ -236,6 +251,24 @@ func TestSendMessagePersistsReplyUsesEmbeddingAndEnqueuesMemory(t *testing.T) {
 	}
 	if store.advancedStage != OnboardingStageSmallTalk {
 		t.Fatalf("expected first successful reply to advance onboarding, got %q", store.advancedStage)
+	}
+}
+
+func TestSendMessageLogsMemoryEnqueueFailureWithoutFailingReply(t *testing.T) {
+	store := &fakeConversationStore{conversation: &data.ConversationModel{ConversationID: "conv-1", UserID: "user-1", CompanionID: "nana", Status: "active"}}
+	model := &fakeModelGateway{chatReply: &modelv1.ChatCompletionReply{Content: "I hear you."}, embedding: &modelv1.CreateEmbeddingReply{Data: []*modelv1.EmbeddingItem{{Embedding: []float32{0.1, 0.2}}}}}
+	processor := &fakeMemoryProcessor{enqueueErr: errors.New("queue unavailable")}
+	logger := &captureLogger{}
+	usecase := NewCompanionUsecase(store, model, nil, processor, logger)
+	_, _, err := usecase.SendMessage(companionContext(), &v1.SendMessageRequest{Content: "I like tea"})
+	if err != nil {
+		t.Fatalf("memory queue failure must not fail the completed reply: %v", err)
+	}
+	if len(processor.jobs) != 1 {
+		t.Fatalf("expected one memory job despite queue failure: %+v", processor.jobs)
+	}
+	if len(logger.entries) != 1 || !strings.Contains(logger.entries[0], "enqueue memory job failed") {
+		t.Fatalf("expected enqueue failure log, entries=%v", logger.entries)
 	}
 }
 

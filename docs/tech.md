@@ -74,10 +74,10 @@ Infrastructure Layer
 
 - `companion-service` 已实现服务端自动恢复上下文、文本/音频/图片/视频消息、流式回复、语义记忆召回和数据治理。媒体二进制由 `asset-service` 管理，本服务仅保存资产引用。
 - `model-gateway` 已实现 OpenAI-compatible Chat、Embedding、STT、TTS 和模型列表。
-- PostgreSQL + pgvector 持久化会话、消息、L1 记忆及其向量；生产记忆任务通过 RocketMQ，debug 配置可显式关闭队列使用进程内处理。
+- PostgreSQL + pgvector 持久化会话、消息、L1 记忆及其向量；debug 和 release 默认都通过 RocketMQ 投递记忆任务。仅在测试或明确关闭队列时使用进程内处理。Embedding 暂时不可用时仍保存已通过安全规则的 L1 记忆，向量字段为空，召回降级为重要性排序，不丢失用户事实。
 - 供应商 API Key 只保留在 `model-gateway`，业务服务只持有内部网关 Key。
 
-生产环境的 `queue.driver=rocketmq` 使用 `companion_memory_extract` topic 和独立 producer/consumer group；消费失败由 RocketMQ 重试并进入该消费组的 DLQ。debug 配置将 `queue.enabled` 设为 `false`，只用于本地验证，不代表生产可以省略 RocketMQ。
+`queue.driver=rocketmq` 使用 `companion_memory_extract` topic 和独立 producer/consumer group；消费失败由 RocketMQ 重试并进入该消费组的 DLQ。debug 默认连接 `127.0.0.1:9876`，release 默认连接 `rocketmq-nameserver:9876`。进程内队列只用于测试或显式禁用 RocketMQ 的场景，不是默认运行路径。
 
 后续可以按负载和数据隔离需求拆分：
 
@@ -339,7 +339,7 @@ TencentDB-Agent-Memory 的 SQLite + sqlite-vec 方案适合本地原型或单机
 | 原始音频和大文本 | 对象存储 | 语音和大内容持久化进入开发 |
 | 热门会话状态 | Redis，可选 | 监测证明缓存能降低实际延迟 |
 
-当前已经创建并使用 PostgreSQL、pgvector；生产配置使用 RocketMQ。Redis 和 OSS 只有在对应持久化调用方合入后才增加资源。
+当前已经创建并使用 PostgreSQL、pgvector；debug 和 release 配置都使用 RocketMQ。Redis 和 OSS 只有在对应持久化调用方合入后才增加资源。
 
 ### 6.4 当前索引
 
@@ -369,6 +369,8 @@ MessageCommitted
 ```
 
 CandidateExtractor 只能产生候选记忆。最终是否激活由 `ConsentGate` 和规则策略决定。
+
+当前实现中，CandidateExtractor 通过 `model-gateway` 生成候选，Embedding 只负责补充向量。Embedding 供应商未配置、调用失败、返回空数据或维度不匹配时，候选仍写入 `companion_memory`，但 `embedding` 为 `NULL`；查询没有可用向量时使用重要性排序。要启用语义向量召回，必须为 `model-gateway` 配置独立的 `MODEL_GATEWAY_EMBEDDING_API_KEY` 和兼容 Embedding endpoint。
 
 ### 7.2 分层生成
 

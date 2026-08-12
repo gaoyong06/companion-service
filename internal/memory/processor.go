@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -123,30 +124,34 @@ func (p *Processor) run() {
 		case <-p.ctx.Done():
 			return
 		case job := <-p.queue:
-			p.process(p.ctx, job)
+			if err := p.process(p.ctx, job); err != nil {
+				p.log.Warnf("memory processing failed: %v", err)
+			}
 		}
 	}
 }
 
-func (p *Processor) process(ctx context.Context, job Job) {
+func (p *Processor) process(ctx context.Context, job Job) error {
 	if p.isBlocked(job.UserID) {
-		return
+		return nil
 	}
 	candidates, err := p.extractor.Extract(ctx, job.Content)
 	if err != nil {
-		p.log.Warnf("memory extraction failed: %v", err)
-		return
-	}
-	embeddings, err := p.extractor.models.Embed(ctx, []string{job.Content})
-	if err != nil {
-		p.log.Warnf("memory embedding failed: %v", err)
-		return
+		return err
 	}
 	var embedding []float32
-	if len(embeddings.Data) > 0 && len(embeddings.Data[0].Embedding) == p.embeddingDimension {
+	embeddings, embeddingErr := p.extractor.models.Embed(ctx, []string{job.Content})
+	switch {
+	case embeddingErr != nil:
+		p.log.Warnf("memory embedding unavailable; persisting without vector: %v", embeddingErr)
+	case embeddings == nil:
+		p.log.Warn("memory embedding response is empty; persisting without vector")
+	case len(embeddings.Data) == 0 || embeddings.Data[0] == nil:
+		p.log.Warn("memory embedding data is empty; persisting without vector")
+	case len(embeddings.Data[0].Embedding) != p.embeddingDimension:
+		p.log.Warnf("memory embedding dimension mismatch; persisting without vector: expected=%d actual=%d", p.embeddingDimension, len(embeddings.Data[0].Embedding))
+	default:
 		embedding = embeddings.Data[0].Embedding
-	} else if len(embeddings.Data) > 0 {
-		p.log.Warnf("memory embedding dimension mismatch: expected=%d actual=%d", p.embeddingDimension, len(embeddings.Data[0].Embedding))
 	}
 	now := time.Now().UTC()
 	for _, candidate := range candidates {
@@ -167,17 +172,20 @@ func (p *Processor) process(ctx context.Context, job Job) {
 		p.lifecycle.RLock()
 		blocked := p.isBlocked(job.UserID)
 		var saveErr error
-		if !blocked {
+		if !blocked && p.store != nil {
 			saveErr = p.store.SaveMemory(ctx, model)
+		} else if !blocked {
+			p.log.Warn("memory store is unavailable")
 		}
 		p.lifecycle.RUnlock()
 		if blocked {
-			return
+			return nil
 		}
 		if saveErr != nil {
-			p.log.Warnf("save memory failed: %v", saveErr)
+			return fmt.Errorf("save memory: %w", saveErr)
 		}
 	}
+	return nil
 }
 
 func (p *Processor) ForgetUser(userID string) {

@@ -25,7 +25,7 @@ memory:
   queue_size: 100
   embedding_dimension: 1536
 queue:
-  enabled: false
+  enabled: true
   driver: rocketmq
   name_servers:
     - 127.0.0.1:9876

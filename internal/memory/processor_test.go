@@ -10,6 +10,8 @@ import (
 	"companion-service/internal/client"
 	"companion-service/internal/conf"
 	"companion-service/internal/data"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
+	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/go-kratos/kratos/v2/log"
 	modelv1 "model-gateway/api/model_gateway/v1"
 )
@@ -17,9 +19,13 @@ import (
 type processorStore struct {
 	saved  []*data.MemoryModel
 	notify chan struct{}
+	err    error
 }
 
 func (s *processorStore) SaveMemory(_ context.Context, model *data.MemoryModel) error {
+	if s.err != nil {
+		return s.err
+	}
 	s.saved = append(s.saved, model)
 	if s.notify != nil {
 		s.notify <- struct{}{}
@@ -28,9 +34,10 @@ func (s *processorStore) SaveMemory(_ context.Context, model *data.MemoryModel) 
 }
 
 type processorModel struct {
-	embedding []float32
-	chatErr   error
-	embedErr  error
+	embedding     []float32
+	chatErr       error
+	embedErr      error
+	embedReplyNil bool
 }
 
 func (m *processorModel) Chat(context.Context, *modelv1.ChatCompletionRequest) (*modelv1.ChatCompletionReply, error) {
@@ -45,6 +52,9 @@ func (m *processorModel) ChatStream(context.Context, *modelv1.ChatCompletionRequ
 func (m *processorModel) Embed(context.Context, []string) (*modelv1.CreateEmbeddingReply, error) {
 	if m.embedErr != nil {
 		return nil, m.embedErr
+	}
+	if m.embedReplyNil {
+		return nil, nil
 	}
 	return &modelv1.CreateEmbeddingReply{Data: []*modelv1.EmbeddingItem{{Embedding: m.embedding}}}, nil
 }
@@ -101,7 +111,7 @@ func TestProcessorEnqueueHonorsDisabledInvalidBlockedAndFullBoundaries(t *testin
 
 func TestNewRocketMQJobQueueValidatesConfigurationBeforeConnecting(t *testing.T) {
 	for _, cfg := range []*conf.Queue{nil, {}, {Enabled: true, Driver: "memory"}, {Enabled: true, Driver: "rocketmq", Topic: "topic", GroupName: "group"}} {
-		queue, err := newRocketMQJobQueue(cfg, log.NewStdLogger(io.Discard), func(context.Context, Job) {})
+		queue, err := newRocketMQJobQueue(cfg, log.NewStdLogger(io.Discard), func(context.Context, Job) error { return nil })
 		if cfg == nil || !cfg.Enabled || cfg.Driver != "rocketmq" {
 			if err != nil || queue != nil {
 				t.Fatalf("disabled/non-rocket queue should be nil, queue=%v err=%v", queue, err)
@@ -111,6 +121,48 @@ func TestNewRocketMQJobQueueValidatesConfigurationBeforeConnecting(t *testing.T)
 		if err == nil || queue != nil {
 			t.Fatalf("incomplete rocketmq config should fail before connect, queue=%v err=%v", queue, err)
 		}
+	}
+}
+
+func TestConsumeMemoryMessagesReturnsSuccessAfterProcessingAllMessages(t *testing.T) {
+	var received []Job
+	messages := []*primitive.MessageExt{
+		{Message: primitive.Message{Body: []byte(`{"user_id":"user-1","source_message_id":"msg-1","content":"likes tea"}`)}},
+		{Message: primitive.Message{Body: []byte(`{"user_id":"user-2","source_message_id":"msg-2","content":"likes coffee"}`)}},
+	}
+	result, err := consumeMemoryMessages(context.Background(), messages, func(_ context.Context, job Job) error {
+		received = append(received, job)
+		return nil
+	}, log.NewHelper(log.NewStdLogger(io.Discard)))
+	if result != consumer.ConsumeSuccess || err != nil {
+		t.Fatalf("expected successful consumption, result=%v err=%v", result, err)
+	}
+	if len(received) != 2 || received[0].UserID != "user-1" || received[1].Content != "likes coffee" {
+		t.Fatalf("unexpected consumed jobs: %+v", received)
+	}
+}
+
+func TestConsumeMemoryMessagesRetriesWhenHandlerFails(t *testing.T) {
+	wantErr := errors.New("database unavailable")
+	result, err := consumeMemoryMessages(context.Background(), []*primitive.MessageExt{
+		{Message: primitive.Message{Body: []byte(`{"user_id":"user-1","content":"likes tea"}`)}},
+	}, func(context.Context, Job) error { return wantErr }, log.NewHelper(log.NewStdLogger(io.Discard)))
+	if result != consumer.ConsumeRetryLater || !errors.Is(err, wantErr) {
+		t.Fatalf("expected retry result with handler error, result=%v err=%v", result, err)
+	}
+}
+
+func TestConsumeMemoryMessagesAcknowledgesMalformedMessages(t *testing.T) {
+	processed := 0
+	result, err := consumeMemoryMessages(context.Background(), []*primitive.MessageExt{
+		{Message: primitive.Message{Body: []byte("not-json")}},
+		{Message: primitive.Message{Body: []byte(`{"user_id":"user-1","content":"likes tea"}`)}},
+	}, func(context.Context, Job) error {
+		processed++
+		return nil
+	}, log.NewHelper(log.NewStdLogger(io.Discard)))
+	if result != consumer.ConsumeSuccess || err != nil || processed != 1 {
+		t.Fatalf("malformed message should be acknowledged while valid messages are processed, result=%v err=%v processed=%d", result, err, processed)
 	}
 }
 
@@ -147,19 +199,41 @@ func TestProcessorForgetUserBlocksPersistenceAndDisabledProcessorIsSafe(t *testi
 	cleanup()
 }
 
-func TestProcessorStopsWhenExtractionOrEmbeddingFails(t *testing.T) {
-	for name, models := range map[string]*processorModel{
-		"extraction": {chatErr: errors.New("chat down")},
-		"embedding":  {embedding: []float32{0.1}, embedErr: errors.New("embedding down")},
-	} {
-		t.Run(name, func(t *testing.T) {
-			store := &processorStore{}
-			processor := &Processor{enabled: true, embeddingDimension: 1, extractor: NewExtractor(models), store: store, log: log.NewHelper(log.NewStdLogger(io.Discard))}
-			processor.process(context.Background(), Job{UserID: "user-1", SourceMessageID: "msg-1", Content: "I like tea"})
-			if len(store.saved) != 0 {
-				t.Fatalf("failed memory pipeline must not persist candidates: %+v", store.saved)
-			}
-		})
+func TestProcessorStopsWhenExtractionFails(t *testing.T) {
+	store := &processorStore{}
+	processor := &Processor{enabled: true, embeddingDimension: 1, extractor: NewExtractor(&processorModel{chatErr: errors.New("chat down")}), store: store, log: log.NewHelper(log.NewStdLogger(io.Discard))}
+	if err := processor.process(context.Background(), Job{UserID: "user-1", SourceMessageID: "msg-1", Content: "I like tea"}); err == nil {
+		t.Fatal("expected extraction error")
+	}
+	if len(store.saved) != 0 {
+		t.Fatalf("failed memory extraction must not persist candidates: %+v", store.saved)
+	}
+}
+
+func TestProcessorReturnsPersistenceErrorForRocketMQRetry(t *testing.T) {
+	wantErr := errors.New("database unavailable")
+	store := &processorStore{err: wantErr}
+	processor := &Processor{enabled: true, embeddingDimension: 2, extractor: NewExtractor(&processorModel{embedding: []float32{0.1, 0.2}}), store: store, log: log.NewHelper(log.NewStdLogger(io.Discard))}
+	if err := processor.process(context.Background(), Job{UserID: "user-1", SourceMessageID: "msg-1", Content: "I like tea"}); !errors.Is(err, wantErr) {
+		t.Fatalf("expected persistence error for RocketMQ retry, got %v", err)
+	}
+}
+
+func TestProcessorPersistsCandidateWhenEmbeddingFails(t *testing.T) {
+	store := &processorStore{}
+	processor := &Processor{enabled: true, embeddingDimension: 2, extractor: NewExtractor(&processorModel{embedErr: errors.New("embedding down")}), store: store, log: log.NewHelper(log.NewStdLogger(io.Discard))}
+	processor.process(context.Background(), Job{UserID: "user-1", SourceMessageID: "msg-1", Content: "I like tea"})
+	if len(store.saved) != 1 || store.saved[0].Content != "likes tea" || len(store.saved[0].Embedding) != 0 {
+		t.Fatalf("embedding failure must keep the extracted memory without a vector: %+v", store.saved)
+	}
+}
+
+func TestProcessorPersistsCandidateWhenEmbeddingReplyIsNil(t *testing.T) {
+	store := &processorStore{}
+	processor := &Processor{enabled: true, embeddingDimension: 2, extractor: NewExtractor(&processorModel{embedReplyNil: true}), store: store, log: log.NewHelper(log.NewStdLogger(io.Discard))}
+	processor.process(context.Background(), Job{UserID: "user-1", SourceMessageID: "msg-1", Content: "I like tea"})
+	if len(store.saved) != 1 || store.saved[0].Content != "likes tea" || len(store.saved[0].Embedding) != 0 {
+		t.Fatalf("nil embedding reply must keep the extracted memory without a vector: %+v", store.saved)
 	}
 }
 

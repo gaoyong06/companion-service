@@ -12,6 +12,7 @@ import (
 	"companion-service/internal/data"
 	"companion-service/internal/memory"
 	"github.com/gaoyong06/go-pkg/middleware/user_id"
+	"github.com/go-kratos/kratos/v2/log"
 	modelv1 "model-gateway/api/model_gateway/v1"
 )
 
@@ -103,7 +104,7 @@ func (p *serviceMemoryProcessor) ForgetUser(userID string) { p.forgotten = userI
 func newServiceFixture() (*CompanionService, *serviceStore, *serviceMemoryProcessor) {
 	store := &serviceStore{conversation: data.ConversationModel{ConversationID: "conv-1", UserID: "user-1", CompanionID: "nana", Status: "active"}, messages: []data.MessageModel{{MessageID: "msg-1", ConversationID: "conv-1", UserID: "user-1", Role: "user", Content: "old"}}}
 	processor := &serviceMemoryProcessor{}
-	usecase := biz.NewCompanionUsecase(store, serviceModels{}, serviceAssetStorage{}, processor)
+	usecase := biz.NewCompanionUsecase(store, serviceModels{}, serviceAssetStorage{}, processor, log.NewStdLogger(io.Discard))
 	return NewCompanionService(usecase), store, processor
 }
 

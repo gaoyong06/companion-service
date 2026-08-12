@@ -28,7 +28,7 @@ queue:
   enabled: true
   driver: rocketmq
   name_servers:
-    - rocketmq-namesrv:9876
+    - rocketmq-nameserver:9876
   group_name: companion_memory
   topic: companion_memory_extract
 log:

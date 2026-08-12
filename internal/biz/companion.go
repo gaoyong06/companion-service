@@ -15,6 +15,7 @@ import (
 	"companion-service/internal/memory"
 	"companion-service/internal/safety"
 	"github.com/gaoyong06/go-pkg/middleware/user_id"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	modelv1 "model-gateway/api/model_gateway/v1"
 )
@@ -24,6 +25,7 @@ type CompanionUsecase struct {
 	models client.ModelGateway
 	assets client.AssetStorage
 	memory memoryProcessor
+	log    *log.Helper
 }
 
 type conversationStore interface {
@@ -53,8 +55,21 @@ const companionMaxTokens int32 = 256
 
 const contextRollCharacterThreshold = 18 * 1024
 
-func NewCompanionUsecase(store conversationStore, models client.ModelGateway, assets client.AssetStorage, processor memoryProcessor) *CompanionUsecase {
-	return &CompanionUsecase{store: store, models: models, assets: assets, memory: processor}
+func NewCompanionUsecase(store conversationStore, models client.ModelGateway, assets client.AssetStorage, processor memoryProcessor, logger log.Logger) *CompanionUsecase {
+	if logger == nil {
+		logger = log.DefaultLogger
+	}
+	return &CompanionUsecase{store: store, models: models, assets: assets, memory: processor, log: log.NewHelper(logger)}
+}
+
+// enqueueMemory 将记忆任务放入异步流水线；队列异常不能影响已经完成的当前回复，但必须记录日志。
+func (u *CompanionUsecase) enqueueMemory(job memory.Job) {
+	if u == nil || u.memory == nil {
+		return
+	}
+	if err := u.memory.Enqueue(job); err != nil {
+		u.log.Warnf("enqueue memory job failed: %v", err)
+	}
 }
 
 func (u *CompanionUsecase) activeConversation(ctx context.Context) (*data.ConversationModel, string, error) {
@@ -175,9 +190,7 @@ func (u *CompanionUsecase) SendMessage(ctx context.Context, req *v1.SendMessageR
 	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
 		return userMessage, assistantMessage, err
 	}
-	if u.memory != nil {
-		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
-	}
+	u.enqueueMemory(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
 	return userMessage, assistantMessage, nil
 }
 
@@ -296,8 +309,8 @@ func (u *CompanionUsecase) SendMediaMessage(ctx context.Context, req *v1.SendMed
 	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
 		return userMessage, assistantMessage, err
 	}
-	if u.memory != nil && caption != "["+mediaType+"]" {
-		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: caption})
+	if caption != "["+mediaType+"]" {
+		u.enqueueMemory(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: caption})
 	}
 	return userMessage, assistantMessage, nil
 }
@@ -385,9 +398,7 @@ func (u *CompanionUsecase) SendMessageStream(ctx context.Context, req *v1.SendMe
 	if err := u.advanceOnboarding(ctx, conversation, userID); err != nil {
 		return err
 	}
-	if u.memory != nil {
-		_ = u.memory.Enqueue(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
-	}
+	u.enqueueMemory(memory.Job{UserID: userID, SourceMessageID: userMessage.MessageID, Content: content})
 	return nil
 }
 

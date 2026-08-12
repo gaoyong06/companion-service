@@ -12,7 +12,7 @@
 - 使用 PostgreSQL + pgvector 做语义记忆召回
 - 支持音频消息 STT -> Chat -> TTS 闭环
 - 支持图片和视频消息，媒体文件由 `asset-service` 管理并以多模态内容部件发送给模型
-- 生产环境记忆任务通过 RocketMQ 投递
+- debug 和生产环境的记忆任务默认通过 RocketMQ 投递
 - 支持按消息执行忘记、停止记忆和纠正反馈，不要求用户管理会话 ID
 - 对明确危机表达返回固定安全转介响应
 - 通过 gRPC 调用 `model-gateway` 的 Chat、Embedding、STT 和 TTS

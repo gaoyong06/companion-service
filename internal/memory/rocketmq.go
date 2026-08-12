@@ -27,7 +27,7 @@ type rocketMQJobQueue struct {
 	log      *log.Helper
 }
 
-func newRocketMQJobQueue(c *conf.Queue, logger log.Logger, handler func(context.Context, Job)) (*rocketMQJobQueue, error) {
+func newRocketMQJobQueue(c *conf.Queue, logger log.Logger, handler func(context.Context, Job) error) (*rocketMQJobQueue, error) {
 	if c == nil || !c.Enabled || c.Driver != "rocketmq" {
 		return nil, nil
 	}
@@ -59,24 +59,41 @@ func newRocketMQJobQueue(c *conf.Queue, logger log.Logger, handler func(context.
 	}
 	queue := &rocketMQJobQueue{producer: p, consumer: consumerClient, topic: c.Topic, log: log.NewHelper(logger)}
 	if err := consumerClient.Subscribe(c.Topic, consumer.MessageSelector{}, func(ctx context.Context, messages ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-		for _, message := range messages {
-			var job Job
-			if err := json.Unmarshal(message.Body, &job); err != nil {
-				queue.log.Errorf("decode memory job failed: %v", err)
-				return consumer.ConsumeSuccess, nil
-			}
-			handler(ctx, job)
-		}
-		return consumer.ConsumeSuccess, nil
+		return consumeMemoryMessages(ctx, messages, handler, queue.log)
 	}); err != nil {
+		_ = consumerClient.Shutdown()
 		_ = p.Shutdown()
 		return nil, fmt.Errorf("subscribe memory topic: %w", err)
 	}
 	if err := consumerClient.Start(); err != nil {
+		_ = consumerClient.Shutdown()
 		_ = p.Shutdown()
 		return nil, fmt.Errorf("start rocketmq memory consumer: %w", err)
 	}
 	return queue, nil
+}
+
+// consumeMemoryMessages 将消息处理错误映射为 RocketMQ 重试结果。
+// 无法解析的消息属于不可恢复的毒消息，确认成功后交由日志和监控处理，避免无限重试阻塞正常记忆任务。
+func consumeMemoryMessages(ctx context.Context, messages []*primitive.MessageExt, handler func(context.Context, Job) error, logger *log.Helper) (consumer.ConsumeResult, error) {
+	if handler == nil {
+		return consumer.ConsumeRetryLater, fmt.Errorf("memory message handler is unavailable")
+	}
+	for _, message := range messages {
+		if message == nil {
+			return consumer.ConsumeRetryLater, fmt.Errorf("memory message is nil")
+		}
+		var job Job
+		if err := json.Unmarshal(message.Body, &job); err != nil {
+			logger.Errorf("decode memory job failed: %v", err)
+			continue
+		}
+		if err := handler(ctx, job); err != nil {
+			logger.Warnf("process memory job failed: %v", err)
+			return consumer.ConsumeRetryLater, err
+		}
+	}
+	return consumer.ConsumeSuccess, nil
 }
 
 func (q *rocketMQJobQueue) Publish(ctx context.Context, job Job) error {

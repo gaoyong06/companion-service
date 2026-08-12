@@ -10,7 +10,9 @@
 | `companion-service` | PostgreSQL 15+ + pgvector | 会话、消息、L1 记忆和向量召回 | 是 |
 | `model-gateway` | 无 | 无状态转发 Chat、Embedding 和模型列表请求 | 否 |
 
-当前版本使用 PostgreSQL + pgvector；生产环境的记忆任务还依赖 RocketMQ。媒体原始文件由 `asset-service` 的 OSS 后端保存，不需要 MySQL、Redis 或单独的向量数据库。
+当前版本使用 PostgreSQL + pgvector；debug 和生产环境的记忆任务默认依赖 RocketMQ。媒体原始文件由 `asset-service` 的 OSS 后端保存，不需要 MySQL、Redis 或单独的向量数据库。
+
+本地 debug 默认连接 RocketMQ NameServer `127.0.0.1:9876`，记忆 topic 为 `companion_memory_extract`，消费组为 `companion_memory_consumer`。NameServer 是 RocketMQ 的 TCP 地址，不提供 HTTP 管理页面；topic 需要由基础设施初始化脚本或 `mqadmin` 预创建。宿主机运行的服务还要求 broker 对外公布可解析的地址（本地通常为 `127.0.0.1:10911`），不能只公布 Docker 网络内的 `rocketmq-broker:10911`。
 
 媒体上传依赖 `asset-service` gRPC（本机默认 `127.0.0.1:9104`），其 OSS/本地存储配置由 `asset-service` 自身维护；`companion-service` 不创建或迁移资产服务的数据库。
 
@@ -68,7 +70,7 @@ psql "$COMPANION_DATABASE_DSN" \
 | `companion_conversation` | 保存内部上下文段归属、陪伴角色、状态、上下文摘要和破冰阶段 |
 | `companion_message` | 保存用户消息和陪伴回复 |
 | `companion_message_asset` | 保存图片/视频的资产引用和访问地址，二进制不落库 |
-| `companion_memory` | 保存异步抽取的 L1 偏好、事实和目标记忆 |
+| `companion_memory` | 保存异步抽取的 L1 偏好、事实和目标记忆；Embedding 暂不可用时 `embedding` 可暂为空 |
 
 字段、索引、外键和每个字段的业务含义以 [sql/companion-service.sql](sql/companion-service.sql) 为准。
 
@@ -92,4 +94,6 @@ psql "$COMPANION_DATABASE_DSN" \
 
 ## 4. PostgreSQL 说明
 
-当前 Companion 已使用 PostgreSQL + pgvector 保存记忆向量，并通过 `embedding <=> query::vector` 做 cosine 距离排序。生产配置还使用 RocketMQ 投递记忆任务；原始图片和视频由 `asset-service` 写入 OSS，PostgreSQL 只保存关联引用。
+当前 Companion 已使用 PostgreSQL + pgvector 保存记忆向量，并通过 `embedding <=> query::vector` 做 cosine 距离排序。debug 和生产配置都使用 RocketMQ 投递记忆任务；原始图片和视频由 `asset-service` 写入 OSS，PostgreSQL 只保存关联引用。
+
+记忆正文与记忆向量采用分阶段写入：候选记忆通过安全规则后先写入 `companion_memory`，Embedding 成功且维度为 1536 时再写入 `embedding`；Embedding 供应商失败不会丢弃正文，向量召回暂时退化为重要性排序。要启用语义召回，`model-gateway` 必须配置兼容 Embedding endpoint 和 `MODEL_GATEWAY_EMBEDDING_API_KEY`。

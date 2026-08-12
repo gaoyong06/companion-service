@@ -53,7 +53,7 @@ func wireApp(bootstrap *conf.Bootstrap, logger log.Logger) (*kratos.App, func(),
 		cleanup()
 		return nil, nil, err
 	}
-	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient, assetClient, processor)
+	companionUsecase := biz.NewCompanionUsecase(store, modelGatewayClient, assetClient, processor, logger)
 	companionService := service.NewCompanionService(companionUsecase)
 	httpServer := server.NewHTTPServer(http, companionService)
 	grpc := conf.NewGRPCConfig(bootstrap)
